@@ -1,3 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">CalendarApp</string>
+    <string name="app_name">Calendar App</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_calendar">TKB</string>
+    <string name="nav_courses">DS môn</string>
+    <string name="nav_events">DS sự kiện</string>
+    <string name="nav_settings">Cài đặt</string>
+
+    <!-- Common -->
+    <string name="save">Lưu</string>
+    <string name="cancel">Hủy</string>
+    <string name="edit">Sửa</string>
+    <string name="delete">Xóa</string>
+
+    <!-- Event -->
+    <string name="event_list">Danh sách sự kiện</string>
+    <string name="add_event">Thêm sự kiện</string>
+    <string name="edit_event">Sửa sự kiện</string>
+    <string name="event_name">Sự kiện</string>
+    <string name="event_note">Ghi chú</string>
+
+    <!-- Course -->
+    <string name="course_list">Danh sách môn học</string>
+    <string name="add_course">Thêm môn học</string>
+    <string name="edit_course">Sửa môn học</string>
+    <string name="course_name">Môn học</string>
+    <string name="room">Phòng học</string>
+
+    <!-- Settings -->
+    <string name="dark_mode">Chế độ tối</string>
+    <string name="week_start">Tuần bắt đầu từ</string>
+    <string name="notifications">Thông báo</string>
+    <string name="reminder">Nhắc trước</string>
+
+    <!-- Time and Date -->
+    <string name="time">Giờ</string>
+    <string name="date">Ngày</string>
+    <string name="start_time">Giờ bắt đầu</string>
+    <string name="end_time">Giờ kết thúc</string>
+    <string name="start_date">Ngày bắt đầu</string>
+    <string name="end_date">Ngày kết thúc</string>
+    <string name="frequency">Cách tuần</string>
+    <string name="choose">Chọn</string>
 </resources>
