@@ -3,12 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/background_gradient"
         android:orientation="vertical"
         android:padding="24dp">
 
@@ -16,7 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
-            android:text="Create Account"
+            android:text="Đăng nhập"
             android:textAlignment="center"
             android:textColor="@color/black"
             android:textSize="24sp"
@@ -26,7 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Create your account to connect with friends"
+            android:text="Welcome back!"
             android:textAlignment="center"
             android:textColor="#757575"
             android:textSize="14sp" />
@@ -47,7 +47,7 @@
                 android:id="@+id/emailEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Your email address or phone numbers"
+                android:hint="Email or phone numbers"
                 android:inputType="textEmailAddress"
                 android:padding="16dp"
                 android:textColorHint="#BDBDBD"
@@ -71,31 +71,7 @@
                 android:id="@+id/passwordEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Create a password"
-                android:inputType="textPassword"
-                android:padding="16dp"
-                android:textColorHint="#BDBDBD"
-                android:textSize="14sp" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/confirmPasswordInputLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:boxBackgroundColor="#F5F5F5"
-            app:boxCornerRadiusBottomEnd="8dp"
-            app:boxCornerRadiusBottomStart="8dp"
-            app:boxCornerRadiusTopEnd="8dp"
-            app:boxCornerRadiusTopStart="8dp"
-            app:endIconMode="password_toggle"
-            app:startIconDrawable="@drawable/ic_lock">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/confirmPasswordEditText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Enter again"
+                android:hint="Password"
                 android:inputType="textPassword"
                 android:padding="16dp"
                 android:textColorHint="#BDBDBD"
@@ -110,7 +86,7 @@
             android:orientation="horizontal">
 
             <CheckBox
-                android:id="@+id/termsCheckBox"
+                android:id="@+id/rememberMeCheckBox"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:buttonTint="#7E57C2" />
@@ -118,19 +94,19 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="I agree with Terms &amp; Conditions"
+                android:text="Remember me"
                 android:textColor="#757575"
                 android:textSize="14sp" />
         </LinearLayout>
 
         <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/signupButton"
+            android:id="@+id/loginButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:background="@drawable/button_purple_background"
             android:padding="16dp"
-            android:text="Sign Up"
+            android:text="Login"
             android:textAllCaps="false"
             android:textColor="@color/white"
             android:textSize="16sp" />
@@ -140,14 +116,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:layout_marginRight="26dp"
-            android:layout_marginLeft="26dp"
             android:background="@drawable/button_border_purple"
             android:padding="16dp"
             android:text="Forgot Password?"
             android:textAllCaps="false"
             android:textColor="#A992E2"
-            android:textSize="12sp" />
+            android:textSize="14sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -229,15 +203,15 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Already registered? "
+                android:text="Doesn't have an account? "
                 android:textColor="#757575"
                 android:textSize="14sp" />
 
             <TextView
-                android:id="@+id/loginTextView"
+                android:id="@+id/signUpTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Log in"
+                android:text="Sign up"
                 android:textColor="#7E57C2"
                 android:textSize="14sp" />
         </LinearLayout>
