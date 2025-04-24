@@ -15,8 +15,10 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.calendarapp.MainActivity;
 import com.example.calendarapp.R;
 import com.example.calendarapp.models.Course;
+import com.example.calendarapp.models.DatabaseHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -38,23 +40,20 @@ public class AddCourseActivity extends AppCompatActivity {
     private Button btnCancel;
     private Button btnSave;
 
-    private Calendar selectedStartDate = Calendar.getInstance();
-    private Calendar selectedEndDate = Calendar.getInstance();
     private Calendar selectedStartTime = Calendar.getInstance();
     private Calendar selectedEndTime = Calendar.getInstance();
+    private Calendar selectedStartDate = Calendar.getInstance();
+    private Calendar selectedEndDate = Calendar.getInstance();
+
+    private DatabaseHelper databaseHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_course);
 
-        initViews();
-        setupSpinners();
-        setupDateTimePickers();
-        setupButtons();
-    }
+        databaseHelper = new DatabaseHelper(this);
 
-    private void initViews() {
         btnBack = findViewById(R.id.btn_back);
         etCourseName = findViewById(R.id.et_course_name);
         etRoom = findViewById(R.id.et_room);
@@ -68,6 +67,10 @@ public class AddCourseActivity extends AppCompatActivity {
         spinnerReminderTime = findViewById(R.id.spinner_reminder_time);
         btnCancel = findViewById(R.id.btn_cancel);
         btnSave = findViewById(R.id.btn_save);
+
+        setupSpinners();
+        setupDateTimePickers();
+        setupButtons();
     }
 
     private void setupSpinners() {
@@ -76,8 +79,8 @@ public class AddCourseActivity extends AppCompatActivity {
         ArrayAdapter<String> dayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, days);
         spinnerDay.setAdapter(dayAdapter);
 
-        // Frequency spinner
-        String[] frequencies = {"1 tuần", "2 tuần", "3 tuần", "4 tuần"};
+        // Week frequency spinner
+        String[] frequencies = {"Hàng tuần", "Cách 1 tuần", "Cách 2 tuần", "Cách 3 tuần", "Cách 4 tuần"};
         ArrayAdapter<String> frequencyAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, frequencies);
         spinnerFrequency.setAdapter(frequencyAdapter);
 
@@ -90,6 +93,8 @@ public class AddCourseActivity extends AppCompatActivity {
 
     private void setupDateTimePickers() {
         // Setup start time picker
+        selectedStartTime.set(Calendar.HOUR_OF_DAY, 7);
+        selectedStartTime.set(Calendar.MINUTE, 30);
         tvStartTimeSelector.setOnClickListener(v -> {
             TimePickerDialog timePickerDialog = new TimePickerDialog(
                     this,
@@ -106,6 +111,8 @@ public class AddCourseActivity extends AppCompatActivity {
         });
 
         // Setup end time picker
+        selectedEndTime.set(Calendar.HOUR_OF_DAY, 9);
+        selectedEndTime.set(Calendar.MINUTE, 0);
         tvEndTimeSelector.setOnClickListener(v -> {
             TimePickerDialog timePickerDialog = new TimePickerDialog(
                     this,
@@ -139,6 +146,8 @@ public class AddCourseActivity extends AppCompatActivity {
         });
 
         // Setup end date picker
+        // Set default end date to 4 months from now
+        selectedEndDate.add(Calendar.MONTH, 4);
         tvEndDateSelector.setOnClickListener(v -> {
             DatePickerDialog datePickerDialog = new DatePickerDialog(
                     this,
@@ -226,14 +235,16 @@ public class AddCourseActivity extends AppCompatActivity {
         Date endDate = selectedEndDate.getTime();
 
         // Get week frequency from spinner selection
-        int weekFrequency = 1; // Default
+        int weekFrequency = 1; // Default to weekly
         String frequencySelection = spinnerFrequency.getSelectedItem().toString();
-        if (frequencySelection.contains("2")) {
-            weekFrequency = 2;
+        if (frequencySelection.contains("1")) {
+            weekFrequency = 2; // Every 2 weeks
+        } else if (frequencySelection.contains("2")) {
+            weekFrequency = 3; // Every 3 weeks
         } else if (frequencySelection.contains("3")) {
-            weekFrequency = 3;
+            weekFrequency = 4; // Every 4 weeks
         } else if (frequencySelection.contains("4")) {
-            weekFrequency = 4;
+            weekFrequency = 5; // Every 5 weeks
         }
 
         boolean notification = switchNotification.isChecked();
@@ -268,12 +279,15 @@ public class AddCourseActivity extends AppCompatActivity {
         course.setNotification(notification);
         course.setReminderMinutes(reminderMinutes);
 
-        // Save course to database
-        // DatabaseHelper db = new DatabaseHelper(this);
-        // db.addCourse(course);
+        // Save to database
+        long id = databaseHelper.addCourse(course);
 
-        // Return result to calling activity
-        setResult(RESULT_OK);
-        finish();
+        if (id > 0) {
+            Toast.makeText(this, "Đã thêm môn học", Toast.LENGTH_SHORT).show();
+            setResult(RESULT_OK);
+            finish();
+        } else {
+            Toast.makeText(this, "Lỗi khi thêm môn học", Toast.LENGTH_SHORT).show();
+        }
     }
 }

@@ -88,7 +88,7 @@ public class CalendarFragment extends Fragment implements CalendarEventAdapter.O
 
         // Lấy ngày hiện tại
         Calendar calendar = Calendar.getInstance();
-        int today = calendar.get(Calendar.DAY_OF_WEEK) - 2; // Chuy��n từ Calendar.DAY_OF_WEEK sang index 0-6
+        int today = calendar.get(Calendar.DAY_OF_WEEK) - 2; // Chuyển từ Calendar.DAY_OF_WEEK sang index 0-6
         if (today < 0) today = 6; // Chủ nhật
 
         // Thêm các tab cho các ngày trong tuần
@@ -105,8 +105,12 @@ public class CalendarFragment extends Fragment implements CalendarEventAdapter.O
 
             // Tính toán ngày trong tháng
             Calendar tempCal = (Calendar) calendar.clone();
-            tempCal.add(Calendar.DAY_OF_WEEK, i - today);
+            int dayDiff = i - today;
+            tempCal.add(Calendar.DAY_OF_WEEK, dayDiff);
             tvDate.setText(String.valueOf(tempCal.get(Calendar.DAY_OF_MONTH)));
+
+            // Lưu trữ ngày thực tế vào tag của tab
+            tab.setTag(tempCal.getTime());
 
             // Highlight tab hiện tại
             if (i == today) {
@@ -174,18 +178,51 @@ public class CalendarFragment extends Fragment implements CalendarEventAdapter.O
     private void loadCalendarItemsForDay(String dayOfWeek) {
         calendarItems.clear();
 
+        // Lấy ngày tương ứng với tab được chọn
+        Calendar selectedCalendar = getSelectedDateForDayOfWeek(dayOfWeek);
+        Date selectedDate = selectedCalendar.getTime();
+
         // Lấy danh sách môn học cho ngày được chọn
-        List<Course> courses = databaseHelper.getActiveCoursesForDay(dayOfWeek);
+        List<Course> courses = databaseHelper.getActiveCoursesForDay(dayOfWeek, selectedDate);
         calendarItems.addAll(courses);
 
-        // Lấy danh sách sự kiện cho ngày hiện tại
-        Calendar calendar = Calendar.getInstance();
-        List<Event> events = databaseHelper.getEventsForDate(calendar.getTime());
+        // Lấy danh sách sự kiện cho ngày được chọn
+        List<Event> events = databaseHelper.getEventsForDate(selectedDate);
         calendarItems.addAll(events);
 
         // Sắp xếp theo thời gian
-        // (Đây là một cách đơn giản, bạn có thể cần một thuật toán sắp xếp phức tạp hơn)
         adapter.notifyDataSetChanged();
+    }
+
+    // Phương thức mới để lấy ngày tương ứng với thứ trong tuần
+    private Calendar getSelectedDateForDayOfWeek(String dayOfWeek) {
+        Calendar calendar = Calendar.getInstance();
+        int currentDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+
+        // Chuyển đổi từ tên thứ sang giá trị Calendar.DAY_OF_WEEK
+        int targetDayOfWeek;
+        switch (dayOfWeek) {
+            case "Thứ Hai": targetDayOfWeek = Calendar.MONDAY; break;
+            case "Thứ Ba": targetDayOfWeek = Calendar.TUESDAY; break;
+            case "Thứ Tư": targetDayOfWeek = Calendar.WEDNESDAY; break;
+            case "Thứ Năm": targetDayOfWeek = Calendar.THURSDAY; break;
+            case "Thứ Sáu": targetDayOfWeek = Calendar.FRIDAY; break;
+            case "Thứ Bảy": targetDayOfWeek = Calendar.SATURDAY; break;
+            case "Chủ Nhật": targetDayOfWeek = Calendar.SUNDAY; break;
+            default: targetDayOfWeek = currentDayOfWeek;
+        }
+
+        // Tính số ngày cần thêm/bớt để đạt được ngày mục tiêu
+        int daysToAdd = targetDayOfWeek - currentDayOfWeek;
+        if (daysToAdd < 0) {
+            daysToAdd += 7; // Nếu ngày mục tiêu đã qua trong tuần này, lấy ngày của tuần sau
+        }
+
+        // Tạo calendar mới với ngày mục tiêu
+        Calendar targetCalendar = (Calendar) calendar.clone();
+        targetCalendar.add(Calendar.DAY_OF_YEAR, daysToAdd);
+
+        return targetCalendar;
     }
 
     private void showAddOptionsDialog() {

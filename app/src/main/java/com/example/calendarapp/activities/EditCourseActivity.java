@@ -3,6 +3,7 @@ package com.example.calendarapp.activities;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -16,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.calendarapp.R;
 import com.example.calendarapp.models.Course;
+import com.example.calendarapp.models.DatabaseHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -37,12 +39,13 @@ public class EditCourseActivity extends AppCompatActivity {
     private Button btnCancel;
     private Button btnSave;
 
-    private Calendar selectedStartDate = Calendar.getInstance();
-    private Calendar selectedEndDate = Calendar.getInstance();
     private Calendar selectedStartTime = Calendar.getInstance();
     private Calendar selectedEndTime = Calendar.getInstance();
+    private Calendar selectedStartDate = Calendar.getInstance();
+    private Calendar selectedEndDate = Calendar.getInstance();
 
     private Course course;
+    private DatabaseHelper databaseHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,14 +59,8 @@ public class EditCourseActivity extends AppCompatActivity {
             return;
         }
 
-        initViews();
-        setupSpinners();
-        loadCourseData();
-        setupDateTimePickers();
-        setupButtons();
-    }
+        databaseHelper = new DatabaseHelper(this);
 
-    private void initViews() {
         btnBack = findViewById(R.id.btn_back);
         etCourseName = findViewById(R.id.et_course_name);
         etRoom = findViewById(R.id.et_room);
@@ -77,6 +74,11 @@ public class EditCourseActivity extends AppCompatActivity {
         spinnerReminderTime = findViewById(R.id.spinner_reminder_time);
         btnCancel = findViewById(R.id.btn_cancel);
         btnSave = findViewById(R.id.btn_save);
+
+        setupSpinners();
+        loadCourseData();
+        setupDateTimePickers();
+        setupButtons();
     }
 
     private void setupSpinners() {
@@ -85,8 +87,8 @@ public class EditCourseActivity extends AppCompatActivity {
         ArrayAdapter<String> dayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, days);
         spinnerDay.setAdapter(dayAdapter);
 
-        // Frequency spinner
-        String[] frequencies = {"1 tuần", "2 tuần", "3 tuần", "4 tuần"};
+        // Week frequency spinner
+        String[] frequencies = {"Hàng tuần", "Cách 1 tuần", "Cách 2 tuần", "Cách 3 tuần", "Cách 4 tuần"};
         ArrayAdapter<String> frequencyAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, frequencies);
         spinnerFrequency.setAdapter(frequencyAdapter);
 
@@ -102,14 +104,15 @@ public class EditCourseActivity extends AppCompatActivity {
 
         // Set day of week spinner
         String dayOfWeek = course.getDayOfWeek();
-        for (int i = 0; i < spinnerDay.getAdapter().getCount(); i++) {
-            if (spinnerDay.getAdapter().getItem(i).toString().equals(dayOfWeek)) {
+        String[] days = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"};
+        for (int i = 0; i < days.length; i++) {
+            if (days[i].equals(dayOfWeek)) {
                 spinnerDay.setSelection(i);
                 break;
             }
         }
 
-        // Set start time
+        // Set time
         String[] startTimeParts = course.getStartTime().split(":");
         if (startTimeParts.length == 2) {
             try {
@@ -122,7 +125,6 @@ public class EditCourseActivity extends AppCompatActivity {
             }
         }
 
-        // Set end time
         String[] endTimeParts = course.getEndTime().split(":");
         if (endTimeParts.length == 2) {
             try {
@@ -135,50 +137,49 @@ public class EditCourseActivity extends AppCompatActivity {
             }
         }
 
-        // Set start date
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(course.getStartDate());
-        selectedStartDate.set(
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
-
-        // Set end date
-        calendar.setTime(course.getEndDate());
-        selectedEndDate.set(
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
-
-        // Set frequency spinner
-        int weekFrequency = course.getWeekFrequency();
-        int frequencyPosition = weekFrequency - 1;
-        if (frequencyPosition >= 0 && frequencyPosition < spinnerFrequency.getAdapter().getCount()) {
-            spinnerFrequency.setSelection(frequencyPosition);
+        // Set dates
+        if (course.getStartDate() != null) {
+            selectedStartDate.setTime(course.getStartDate());
         }
+
+        if (course.getEndDate() != null) {
+            selectedEndDate.setTime(course.getEndDate());
+        }
+
+        // Set week frequency spinner
+        int weekFrequency = course.getWeekFrequency();
+        int spinnerPosition = 0; // Default to weekly
+        if (weekFrequency == 2) {
+            spinnerPosition = 1; // Every 2 weeks
+        } else if (weekFrequency == 3) {
+            spinnerPosition = 2; // Every 3 weeks
+        } else if (weekFrequency == 4) {
+            spinnerPosition = 3; // Every 4 weeks
+        } else if (weekFrequency == 5) {
+            spinnerPosition = 4; // Every 5 weeks
+        }
+        spinnerFrequency.setSelection(spinnerPosition);
 
         // Set notification switch
         switchNotification.setChecked(course.isNotification());
 
         // Set reminder spinner
         int reminderMinutes = course.getReminderMinutes();
-        int spinnerPosition = 2; // Default to 15 minutes
+        int reminderPosition = 2; // Default to 15 minutes
         if (reminderMinutes == 5) {
-            spinnerPosition = 0;
+            reminderPosition = 0;
         } else if (reminderMinutes == 10) {
-            spinnerPosition = 1;
+            reminderPosition = 1;
         } else if (reminderMinutes == 15) {
-            spinnerPosition = 2;
+            reminderPosition = 2;
         } else if (reminderMinutes == 30) {
-            spinnerPosition = 3;
+            reminderPosition = 3;
         } else if (reminderMinutes == 60) {
-            spinnerPosition = 4;
+            reminderPosition = 4;
         } else if (reminderMinutes == 120) {
-            spinnerPosition = 5;
+            reminderPosition = 5;
         }
-        spinnerReminderTime.setSelection(spinnerPosition);
+        spinnerReminderTime.setSelection(reminderPosition);
 
         updateStartTimeDisplay();
         updateEndTimeDisplay();
@@ -318,14 +319,16 @@ public class EditCourseActivity extends AppCompatActivity {
         course.setEndDate(selectedEndDate.getTime());
 
         // Get week frequency from spinner selection
-        int weekFrequency = 1; // Default
+        int weekFrequency = 1; // Default to weekly
         String frequencySelection = spinnerFrequency.getSelectedItem().toString();
-        if (frequencySelection.contains("2")) {
-            weekFrequency = 2;
+        if (frequencySelection.contains("1")) {
+            weekFrequency = 2; // Every 2 weeks
+        } else if (frequencySelection.contains("2")) {
+            weekFrequency = 3; // Every 3 weeks
         } else if (frequencySelection.contains("3")) {
-            weekFrequency = 3;
+            weekFrequency = 4; // Every 4 weeks
         } else if (frequencySelection.contains("4")) {
-            weekFrequency = 4;
+            weekFrequency = 5; // Every 5 weeks
         }
         course.setWeekFrequency(weekFrequency);
 
@@ -349,11 +352,15 @@ public class EditCourseActivity extends AppCompatActivity {
         }
         course.setReminderMinutes(reminderMinutes);
 
-        // Update course in database
-        // DatabaseHelper db = new DatabaseHelper(this);
-        // db.updateCourse(course);
+        // Update in database
+        int result = databaseHelper.updateCourse(course);
 
-        setResult(RESULT_OK);
-        finish();
+        if (result > 0) {
+            Toast.makeText(this, "Đã cập nhật môn học", Toast.LENGTH_SHORT).show();
+            setResult(RESULT_OK);
+            finish();
+        } else {
+            Toast.makeText(this, "Lỗi khi cập nhật môn học", Toast.LENGTH_SHORT).show();
+        }
     }
 }

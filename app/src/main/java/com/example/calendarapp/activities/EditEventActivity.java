@@ -3,6 +3,7 @@ package com.example.calendarapp.activities;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -10,10 +11,12 @@ import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.calendarapp.R;
+import com.example.calendarapp.models.DatabaseHelper;
 import com.example.calendarapp.models.Event;
 
 import java.text.SimpleDateFormat;
@@ -34,6 +37,7 @@ public class EditEventActivity extends AppCompatActivity {
     private Calendar selectedDate = Calendar.getInstance();
     private Calendar selectedTime = Calendar.getInstance();
     private Event event;
+    private DatabaseHelper databaseHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +50,8 @@ public class EditEventActivity extends AppCompatActivity {
             finish();
             return;
         }
+
+        databaseHelper = new DatabaseHelper(this);
 
         btnBack = findViewById(R.id.btn_back);
         etEventTitle = findViewById(R.id.et_event_title);
@@ -74,13 +80,9 @@ public class EditEventActivity extends AppCompatActivity {
         etEventNote.setText(event.getNote());
 
         // Set date
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(event.getDate());
-        selectedDate.set(
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
+        if (event.getDate() != null) {
+            selectedDate.setTime(event.getDate());
+        }
 
         // Set time
         String[] timeParts = event.getTime().split(":");
@@ -213,7 +215,15 @@ public class EditEventActivity extends AppCompatActivity {
         }
         event.setReminderMinutes(reminderMinutes);
 
-        setResult(RESULT_OK);
-        finish();
+        // Update in database
+        int result = databaseHelper.updateEvent(event);
+
+        if (result > 0) {
+            Toast.makeText(this, "Đã cập nhật sự kiện", Toast.LENGTH_SHORT).show();
+            setResult(RESULT_OK);
+            finish();
+        } else {
+            Toast.makeText(this, "Lỗi khi cập nhật sự kiện", Toast.LENGTH_SHORT).show();
+        }
     }
 }

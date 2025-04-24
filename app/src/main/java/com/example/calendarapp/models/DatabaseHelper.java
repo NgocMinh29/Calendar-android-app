@@ -98,12 +98,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         ContentValues values = new ContentValues();
         values.put(EVENT_TITLE, event.getTitle());
-        values.put(EVENT_NOTE, event.getNote());
+        values.put(EVENT_NOTE, event.getNote() != null ? event.getNote() : "");
         values.put(EVENT_DATE, dateFormat.format(event.getDate()));
         values.put(EVENT_TIME, event.getTime());
         values.put(EVENT_NOTIFICATION, event.isNotification() ? 1 : 0);
         values.put(EVENT_REMINDER_MINUTES, event.getReminderMinutes());
-        values.put(EVENT_LOCATION, event.getLocation());
+        values.put(EVENT_LOCATION, event.getLocation() != null ? event.getLocation() : "");
 
         // Thêm vào database
         long id = db.insert(TABLE_EVENTS, null, values);
@@ -118,11 +118,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         Cursor cursor = db.query(TABLE_EVENTS, null, EVENT_ID + "=?",
                 new String[]{String.valueOf(id)}, null, null, null, null);
 
-        if (cursor != null)
-            cursor.moveToFirst();
+        Event event = new Event();
 
-        Event event = cursorToEvent(cursor);
-        cursor.close();
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                event = cursorToEvent(cursor);
+            }
+            cursor.close();
+        }
 
         return event;
     }
@@ -150,7 +153,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public List<Event> getEventsForDate(Date date) {
         List<Event> eventList = new ArrayList<>();
 
+        // Chuyển đổi Date thành chuỗi ngày để so sánh
         String dateString = dateFormat.format(date);
+
         String selectQuery = "SELECT * FROM " + TABLE_EVENTS + " WHERE " + EVENT_DATE + "=? ORDER BY " + EVENT_TIME + " ASC";
 
         SQLiteDatabase db = this.getReadableDatabase();
@@ -195,22 +200,37 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private Event cursorToEvent(Cursor cursor) {
         Event event = new Event();
 
-        event.setId(cursor.getLong(cursor.getColumnIndex(EVENT_ID)));
-        event.setTitle(cursor.getString(cursor.getColumnIndex(EVENT_TITLE)));
-        event.setNote(cursor.getString(cursor.getColumnIndex(EVENT_NOTE)));
+        if (cursor != null && !cursor.isBeforeFirst() && !cursor.isAfterLast()) {
+            int idIndex = cursor.getColumnIndex(EVENT_ID);
+            int titleIndex = cursor.getColumnIndex(EVENT_TITLE);
+            int noteIndex = cursor.getColumnIndex(EVENT_NOTE);
+            int dateIndex = cursor.getColumnIndex(EVENT_DATE);
+            int timeIndex = cursor.getColumnIndex(EVENT_TIME);
+            int notificationIndex = cursor.getColumnIndex(EVENT_NOTIFICATION);
+            int reminderIndex = cursor.getColumnIndex(EVENT_REMINDER_MINUTES);
+            int locationIndex = cursor.getColumnIndex(EVENT_LOCATION);
 
-        String dateString = cursor.getString(cursor.getColumnIndex(EVENT_DATE));
-        try {
-            event.setDate(dateFormat.parse(dateString));
-        } catch (ParseException e) {
-            e.printStackTrace();
-            event.setDate(new Date()); // Mặc định là ngày hiện tại nếu có lỗi
+            if (idIndex != -1) event.setId(cursor.getLong(idIndex));
+            if (titleIndex != -1) event.setTitle(cursor.getString(titleIndex));
+            if (noteIndex != -1) event.setNote(cursor.getString(noteIndex));
+
+            if (dateIndex != -1) {
+                String dateString = cursor.getString(dateIndex);
+                try {
+                    event.setDate(dateFormat.parse(dateString));
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                    event.setDate(new Date()); // Mặc định là ngày hiện tại nếu có lỗi
+                }
+            } else {
+                event.setDate(new Date());
+            }
+
+            if (timeIndex != -1) event.setTime(cursor.getString(timeIndex));
+            if (notificationIndex != -1) event.setNotification(cursor.getInt(notificationIndex) == 1);
+            if (reminderIndex != -1) event.setReminderMinutes(cursor.getInt(reminderIndex));
+            if (locationIndex != -1) event.setLocation(cursor.getString(locationIndex));
         }
-
-        event.setTime(cursor.getString(cursor.getColumnIndex(EVENT_TIME)));
-        event.setNotification(cursor.getInt(cursor.getColumnIndex(EVENT_NOTIFICATION)) == 1);
-        event.setReminderMinutes(cursor.getInt(cursor.getColumnIndex(EVENT_REMINDER_MINUTES)));
-        event.setLocation(cursor.getString(cursor.getColumnIndex(EVENT_LOCATION)));
 
         return event;
     }
@@ -245,11 +265,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         Cursor cursor = db.query(TABLE_COURSES, null, COURSE_ID + "=?",
                 new String[]{String.valueOf(id)}, null, null, null, null);
 
-        if (cursor != null)
-            cursor.moveToFirst();
+        Course course = new Course();
 
-        Course course = cursorToCourse(cursor);
-        cursor.close();
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                course = cursorToCourse(cursor);
+            }
+            cursor.close();
+        }
 
         return course;
     }
@@ -299,9 +322,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return courseList;
     }
 
-    public List<Course> getActiveCoursesForDay(String dayOfWeek) {
+    public List<Course> getActiveCoursesForDay(String dayOfWeek, Date currentDate) {
         List<Course> courseList = new ArrayList<>();
-        Date currentDate = new Date();
 
         String selectQuery = "SELECT * FROM " + TABLE_COURSES + " WHERE " + COURSE_DAY_OF_WEEK + "=? ORDER BY " + COURSE_START_TIME + " ASC";
 
@@ -312,9 +334,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             do {
                 Course course = cursorToCourse(cursor);
 
-                // Kiểm tra xem khóa học có trong khoảng thời gian hiện tại không
+                // Kiểm tra xem ngày hiện tại có trong khoảng thời gian của khóa học không
                 if (isDateInRange(currentDate, course.getStartDate(), course.getEndDate())) {
-                    courseList.add(course);
+                    // Kiểm tra tần suất tuần
+                    if (isCorrectWeekFrequency(currentDate, course.getStartDate(), course.getWeekFrequency())) {
+                        courseList.add(course);
+                    }
                 }
             } while (cursor.moveToNext());
         }
@@ -322,6 +347,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
 
         return courseList;
+    }
+
+    // Phương thức mới để kiểm tra tần suất tuần
+    private boolean isCorrectWeekFrequency(Date currentDate, Date startDate, int weekFrequency) {
+        if (weekFrequency <= 1) {
+            return true; // Nếu là hàng tuần, luôn trả về true
+        }
+
+        // Tính số tuần giữa ngày hiện tại và ngày bắt đầu
+        Calendar currentCal = Calendar.getInstance();
+        currentCal.setTime(currentDate);
+
+        Calendar startCal = Calendar.getInstance();
+        startCal.setTime(startDate);
+
+        // Đặt cả hai calendar về đầu tuần (thứ Hai)
+        currentCal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+        startCal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+
+        // Tính số mili giây giữa hai ngày
+        long diffInMillis = currentCal.getTimeInMillis() - startCal.getTimeInMillis();
+        long diffInWeeks = diffInMillis / (7 * 24 * 60 * 60 * 1000);
+
+        // Kiểm tra xem số tuần có chia hết cho tần suất không
+        return diffInWeeks % weekFrequency == 0;
     }
 
     private boolean isDateInRange(Date date, Date startDate, Date endDate) {
@@ -359,29 +409,70 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private Course cursorToCourse(Cursor cursor) {
         Course course = new Course();
 
-        course.setId(cursor.getLong(cursor.getColumnIndex(COURSE_ID)));
-        course.setName(cursor.getString(cursor.getColumnIndex(COURSE_NAME)));
-        course.setRoom(cursor.getString(cursor.getColumnIndex(COURSE_ROOM)));
-        course.setDayOfWeek(cursor.getString(cursor.getColumnIndex(COURSE_DAY_OF_WEEK)));
-        course.setStartTime(cursor.getString(cursor.getColumnIndex(COURSE_START_TIME)));
-        course.setEndTime(cursor.getString(cursor.getColumnIndex(COURSE_END_TIME)));
+        if (cursor != null && !cursor.isBeforeFirst() && !cursor.isAfterLast()) {
+            int idIndex = cursor.getColumnIndex(COURSE_ID);
+            int nameIndex = cursor.getColumnIndex(COURSE_NAME);
+            int roomIndex = cursor.getColumnIndex(COURSE_ROOM);
+            int dayOfWeekIndex = cursor.getColumnIndex(COURSE_DAY_OF_WEEK);
+            int startTimeIndex = cursor.getColumnIndex(COURSE_START_TIME);
+            int endTimeIndex = cursor.getColumnIndex(COURSE_END_TIME);
+            int startDateIndex = cursor.getColumnIndex(COURSE_START_DATE);
+            int endDateIndex = cursor.getColumnIndex(COURSE_END_DATE);
+            int weekFrequencyIndex = cursor.getColumnIndex(COURSE_WEEK_FREQUENCY);
+            int notificationIndex = cursor.getColumnIndex(COURSE_NOTIFICATION);
+            int reminderIndex = cursor.getColumnIndex(COURSE_REMINDER_MINUTES);
 
-        String startDateString = cursor.getString(cursor.getColumnIndex(COURSE_START_DATE));
-        String endDateString = cursor.getString(cursor.getColumnIndex(COURSE_END_DATE));
+            if (idIndex != -1) course.setId(cursor.getLong(idIndex));
+            if (nameIndex != -1) course.setName(cursor.getString(nameIndex));
+            if (roomIndex != -1) course.setRoom(cursor.getString(roomIndex));
+            if (dayOfWeekIndex != -1) course.setDayOfWeek(cursor.getString(dayOfWeekIndex));
+            if (startTimeIndex != -1) course.setStartTime(cursor.getString(startTimeIndex));
+            if (endTimeIndex != -1) course.setEndTime(cursor.getString(endTimeIndex));
 
-        try {
-            course.setStartDate(dateFormat.parse(startDateString));
-            course.setEndDate(dateFormat.parse(endDateString));
-        } catch (ParseException e) {
-            e.printStackTrace();
-            course.setStartDate(new Date());
-            course.setEndDate(new Date());
+            Date startDate = new Date();
+            Date endDate = new Date();
+
+            if (startDateIndex != -1) {
+                String startDateString = cursor.getString(startDateIndex);
+                try {
+                    startDate = dateFormat.parse(startDateString);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (endDateIndex != -1) {
+                String endDateString = cursor.getString(endDateIndex);
+                try {
+                    endDate = dateFormat.parse(endDateString);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            course.setStartDate(startDate);
+            course.setEndDate(endDate);
+
+            if (weekFrequencyIndex != -1) course.setWeekFrequency(cursor.getInt(weekFrequencyIndex));
+            if (notificationIndex != -1) course.setNotification(cursor.getInt(notificationIndex) == 1);
+            if (reminderIndex != -1) course.setReminderMinutes(cursor.getInt(reminderIndex));
         }
 
-        course.setWeekFrequency(cursor.getInt(cursor.getColumnIndex(COURSE_WEEK_FREQUENCY)));
-        course.setNotification(cursor.getInt(cursor.getColumnIndex(COURSE_NOTIFICATION)) == 1);
-        course.setReminderMinutes(cursor.getInt(cursor.getColumnIndex(COURSE_REMINDER_MINUTES)));
-
         return course;
+    }
+
+    public boolean isDatabaseCreated() {
+        SQLiteDatabase db = null;
+        try {
+            db = this.getReadableDatabase();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (db != null) {
+                db.close();
+            }
+        }
     }
 }
