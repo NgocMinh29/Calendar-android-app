@@ -1,4 +1,4 @@
-package com.example.calendarapp;
+package com.example.calendarapp.sign_up;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -12,6 +12,10 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
+import com.example.calendarapp.MainActivity;
+import com.example.calendarapp.R;
+import com.example.calendarapp.forgot_password.ForgotPasswordActivity;
+import com.example.calendarapp.login.LoginActivity;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 

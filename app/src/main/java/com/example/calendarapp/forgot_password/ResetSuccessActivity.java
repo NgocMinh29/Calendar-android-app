@@ -1,4 +1,4 @@
-package com.example.calendarapp;
+package com.example.calendarapp.forgot_password;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -6,6 +6,9 @@ import android.view.View;
 import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.calendarapp.R;
+import com.example.calendarapp.login.LoginActivity;
 
 public class ResetSuccessActivity extends AppCompatActivity {
 

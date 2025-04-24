@@ -1,11 +1,10 @@
-package com.example.calendarapp;
+package com.example.calendarapp.login;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -13,6 +12,10 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
+import com.example.calendarapp.MainActivity;
+import com.example.calendarapp.R;
+import com.example.calendarapp.sign_up.SignupActivity;
+import com.example.calendarapp.forgot_password.ForgotPasswordActivity;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 

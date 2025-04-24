@@ -1,4 +1,4 @@
-package com.example.calendarapp;
+package com.example.calendarapp.sign_up;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -14,12 +14,14 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-public class VerificationActivity extends AppCompatActivity {
+import com.example.calendarapp.R;
 
-    private EditText digit1, digit2, digit3, digit4;
+public class SignupVerificationActivity extends AppCompatActivity {
+
+    private EditText digit1, digit2, digit3, digit4, digit5, digit6;
     private Button verifyButton;
     private ImageButton backButton;
-    private TextView resendCodeTextView, emailAddressTextView;
+    private TextView resendCodeTextView, emailTextView;
     private String email;
     private CountDownTimer resendTimer;
     private boolean canResend = true;
@@ -27,7 +29,7 @@ public class VerificationActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_verification);
+        setContentView(R.layout.activity_signup_verification);
 
         // Lấy email từ Intent
         email = getIntent().getStringExtra("EMAIL");
@@ -37,13 +39,15 @@ public class VerificationActivity extends AppCompatActivity {
         digit2 = findViewById(R.id.digit2);
         digit3 = findViewById(R.id.digit3);
         digit4 = findViewById(R.id.digit4);
+        digit5 = findViewById(R.id.digit5);
+        digit6 = findViewById(R.id.digit6);
         verifyButton = findViewById(R.id.verifyButton);
         backButton = findViewById(R.id.backButton);
         resendCodeTextView = findViewById(R.id.resendCodeTextView);
-        emailAddressTextView = findViewById(R.id.emailAddressTextView);
+        emailTextView = findViewById(R.id.emailTextView);
 
         // Hiển thị email
-        emailAddressTextView.setText(email);
+        emailTextView.setText(email);
 
         // Thiết lập chuyển focus tự động giữa các ô nhập mã
         setupDigitInputs();
@@ -53,10 +57,10 @@ public class VerificationActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (validateVerificationCode()) {
-                    // Chuyển đến màn hình đặt mật khẩu mới
-                    Intent intent = new Intent(VerificationActivity.this, SetNewPasswordActivity.class);
-                    intent.putExtra("EMAIL", email);
+                    // Chuyển đến màn hình thành công
+                    Intent intent = new Intent(SignupVerificationActivity.this, SignupSuccessActivity.class);
                     startActivity(intent);
+                    finish();
                 }
             }
         });
@@ -86,72 +90,51 @@ public class VerificationActivity extends AppCompatActivity {
 
     // Thiết lập chuyển focus tự động giữa các ô nhập mã
     private void setupDigitInputs() {
-        digit1.addTextChangedListener(new TextWatcher() {
+        digit1.addTextChangedListener(createTextWatcher(digit1, null, digit2));
+        digit2.addTextChangedListener(createTextWatcher(digit2, digit1, digit3));
+        digit3.addTextChangedListener(createTextWatcher(digit3, digit2, digit4));
+        digit4.addTextChangedListener(createTextWatcher(digit4, digit3, digit5));
+        digit5.addTextChangedListener(createTextWatcher(digit5, digit4, digit6));
+        digit6.addTextChangedListener(createTextWatcher(digit6, digit5, null));
+    }
+
+    // Tạo TextWatcher để xử lý chuyển focus
+    private TextWatcher createTextWatcher(final EditText currentDigit, final EditText previousDigit, final EditText nextDigit) {
+        return new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s.length() == 1) {
-                    digit2.requestFocus();
+                if (s.length() == 1 && nextDigit != null) {
+                    nextDigit.requestFocus();
+                } else if (s.length() == 0 && previousDigit != null) {
+                    previousDigit.requestFocus();
                 }
+
+                // Kiểm tra xem tất cả các ô đã được điền chưa
+                checkAllDigitsFilled();
             }
 
             @Override
             public void afterTextChanged(Editable s) {}
-        });
+        };
+    }
 
-        digit2.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+    // Kiểm tra xem tất cả các ô đã được điền chưa
+    private void checkAllDigitsFilled() {
+        if (!digit1.getText().toString().isEmpty() &&
+                !digit2.getText().toString().isEmpty() &&
+                !digit3.getText().toString().isEmpty() &&
+                !digit4.getText().toString().isEmpty() &&
+                !digit5.getText().toString().isEmpty() &&
+                !digit6.getText().toString().isEmpty()) {
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s.length() == 1) {
-                    digit3.requestFocus();
-                } else if (s.length() == 0) {
-                    digit1.requestFocus();
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-
-        digit3.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s.length() == 1) {
-                    digit4.requestFocus();
-                } else if (s.length() == 0) {
-                    digit2.requestFocus();
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-
-        digit4.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s.length() == 1) {
-                    // Tự động xác minh khi đã nhập đủ 4 chữ số
-                    verifyButton.performClick();
-                } else if (s.length() == 0) {
-                    digit3.requestFocus();
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
+            // Kích hoạt nút xác minh
+            verifyButton.setBackgroundResource(R.drawable.button_purple_background);
+        } else {
+            verifyButton.setBackgroundResource(R.drawable.button_gray_background);
+        }
     }
 
     // Kiểm tra mã xác nhận
@@ -159,18 +142,20 @@ public class VerificationActivity extends AppCompatActivity {
         String enteredCode = digit1.getText().toString() +
                 digit2.getText().toString() +
                 digit3.getText().toString() +
-                digit4.getText().toString();
+                digit4.getText().toString() +
+                digit5.getText().toString() +
+                digit6.getText().toString();
 
-        if (enteredCode.length() < 4) {
+        if (enteredCode.length() < 6) {
             Toast.makeText(this, "Vui lòng nhập đầy đủ mã xác nhận", Toast.LENGTH_SHORT).show();
             return false;
         }
 
         // Kiểm tra mã xác nhận có đúng không
-        String savedCode = getSharedPreferences("ForgotPassword", MODE_PRIVATE)
+        String savedCode = getSharedPreferences("SignupVerification", MODE_PRIVATE)
                 .getString("verification_code", "");
 
-        if (!enteredCode.equals(savedCode) && !enteredCode.equals("1234")) { // 1234 là mã mặc định để test
+        if (!enteredCode.equals(savedCode) && !enteredCode.equals("123456")) { // 123456 là mã mặc định để test
             Toast.makeText(this, "Mã xác nhận không đúng", Toast.LENGTH_SHORT).show();
             return false;
         }
@@ -184,7 +169,7 @@ public class VerificationActivity extends AppCompatActivity {
         String newVerificationCode = generateRandomCode();
 
         // Lưu mã mới vào SharedPreferences
-        getSharedPreferences("ForgotPassword", MODE_PRIVATE)
+        getSharedPreferences("SignupVerification", MODE_PRIVATE)
                 .edit()
                 .putString("verification_code", newVerificationCode)
                 .apply();
@@ -197,6 +182,8 @@ public class VerificationActivity extends AppCompatActivity {
         digit2.setText("");
         digit3.setText("");
         digit4.setText("");
+        digit5.setText("");
+        digit6.setText("");
         digit1.requestFocus();
     }
 
@@ -224,9 +211,9 @@ public class VerificationActivity extends AppCompatActivity {
         }.start();
     }
 
-    // Tạo mã xác nhận ngẫu nhiên 4 chữ số
+    // Tạo mã xác nhận ngẫu nhiên 6 chữ số
     private String generateRandomCode() {
-        int code = (int) (Math.random() * 9000) + 1000; // Tạo số ngẫu nhiên từ 1000 đến 9999
+        int code = (int) (Math.random() * 900000) + 100000; // Tạo số ngẫu nhiên từ 100000 đến 999999
         return String.valueOf(code);
     }
 

@@ -11,7 +11,7 @@
         android:theme="@style/Theme.CalendarApp">
 
         <activity
-            android:name=".LoginActivity"
+            android:name=".login.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -19,13 +19,13 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".SignupActivity" />
-        <activity android:name=".SignupVerificationActivity" />
-        <activity android:name=".SignupSuccessActivity" />
-        <activity android:name=".ForgotPasswordActivity" />
-        <activity android:name=".VerificationActivity" />
-        <activity android:name=".SetNewPasswordActivity" />
-        <activity android:name=".ResetSuccessActivity" />
+        <activity android:name=".sign_up.SignupActivity" />
+        <activity android:name=".sign_up.SignupVerificationActivity" />
+        <activity android:name=".sign_up.SignupSuccessActivity" />
+        <activity android:name=".forgot_password.ForgotPasswordActivity" />
+        <activity android:name=".forgot_password.VerificationActivity" />
+        <activity android:name=".forgot_password.SetNewPasswordActivity" />
+        <activity android:name=".forgot_password.ResetSuccessActivity" />
         <activity android:name=".MainActivity" />
 
     </application>

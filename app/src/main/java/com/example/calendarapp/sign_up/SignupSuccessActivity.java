@@ -1,4 +1,4 @@
-package com.example.calendarapp;
+package com.example.calendarapp.sign_up;
 
 
 import android.content.Intent;
@@ -7,6 +7,9 @@ import android.view.View;
 import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.calendarapp.R;
+import com.example.calendarapp.login.LoginActivity;
 
 public class SignupSuccessActivity extends AppCompatActivity {
 
