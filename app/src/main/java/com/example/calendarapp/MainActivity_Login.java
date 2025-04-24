@@ -2,6 +2,7 @@ package com.example.calendarapp;
 
 
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TextView;
 
@@ -25,5 +26,9 @@ public class MainActivity_Login extends AppCompatActivity {
         } else {
             welcomeTextView.setText("Chào mừng, Khách");
         }
+        new android.os.Handler().postDelayed(() -> {
+            startActivity(new Intent(MainActivity_Login.this, MainActivity.class));
+            finish();
+        }, 3000);
     }
 }

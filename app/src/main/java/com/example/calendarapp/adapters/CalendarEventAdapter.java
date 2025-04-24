@@ -14,11 +14,13 @@ import com.example.calendarapp.R;
 import com.example.calendarapp.models.Course;
 import com.example.calendarapp.models.Event;
 
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
 
 public class CalendarEventAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private static final int TYPE_COURSE = 0;
-    private static final int TYPE_EVENT = 1;
+    private static final int TYPE_EVENT = 0;
+    private static final int TYPE_COURSE = 1;
 
     private final List<Object> items;
     private final Context context;
@@ -37,45 +39,67 @@ public class CalendarEventAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     @Override
     public int getItemViewType(int position) {
-        if (items.get(position) instanceof Course) {
-            return TYPE_COURSE;
-        } else {
+        if (items.get(position) instanceof Event) {
             return TYPE_EVENT;
+        } else {
+            return TYPE_COURSE;
         }
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (viewType == TYPE_COURSE) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_calendar_course, parent, false);
-            return new CourseViewHolder(view);
-        } else {
+        if (viewType == TYPE_EVENT) {
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_calendar_event, parent, false);
             return new EventViewHolder(view);
+        } else {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_calendar_course, parent, false);
+            return new CourseViewHolder(view);
         }
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (getItemViewType(position) == TYPE_COURSE) {
-            Course course = (Course) items.get(position);
-            CourseViewHolder courseHolder = (CourseViewHolder) holder;
-
-            courseHolder.tvCourseName.setText(course.getName());
-            courseHolder.tvCourseTime.setText(course.getStartTime() + " - " + course.getEndTime());
-            courseHolder.tvCourseRoom.setText(course.getRoom());
-
-            courseHolder.itemView.setOnClickListener(v -> listener.onCourseClick(course));
-        } else {
-            Event event = (Event) items.get(position);
+        if (getItemViewType(position) == TYPE_EVENT) {
             EventViewHolder eventHolder = (EventViewHolder) holder;
+            Event event = (Event) items.get(position);
 
-            eventHolder.tvEventTitle.setText(event.getTitle());
-            eventHolder.tvEventTime.setText(event.getTime());
-            eventHolder.tvEventLocation.setText(event.getLocation());
+            eventHolder.tvTitle.setText(event.getTitle());
+            eventHolder.tvTime.setText(event.getTime());
+            eventHolder.tvLocation.setText(event.getLocation());
 
-            eventHolder.itemView.setOnClickListener(v -> listener.onEventClick(event));
+            if (event.isNotification()) {
+                eventHolder.tvReminder.setText("Nhắc trước " + event.getReminderMinutes() + " phút");
+                eventHolder.tvReminder.setVisibility(View.VISIBLE);
+            } else {
+                eventHolder.tvReminder.setVisibility(View.GONE);
+            }
+
+            eventHolder.itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onEventClick(event);
+                }
+            });
+        } else {
+            CourseViewHolder courseHolder = (CourseViewHolder) holder;
+            Course course = (Course) items.get(position);
+
+            courseHolder.tvTitle.setText(course.getName());
+            courseHolder.tvTime.setText(course.getStartTime() + " - " + course.getEndTime());
+            courseHolder.tvRoom.setText(course.getRoom());
+
+            if (course.isNotification()) {
+                courseHolder.tvReminder.setText("Nhắc trước " + course.getReminderMinutes() + " phút");
+                courseHolder.tvReminder.setVisibility(View.VISIBLE);
+            } else {
+                courseHolder.tvReminder.setVisibility(View.GONE);
+            }
+
+            courseHolder.itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onCourseClick(course);
+                }
+            });
         }
     }
 
@@ -84,29 +108,31 @@ public class CalendarEventAdapter extends RecyclerView.Adapter<RecyclerView.View
         return items.size();
     }
 
-    static class CourseViewHolder extends RecyclerView.ViewHolder {
-        TextView tvCourseName, tvCourseTime, tvCourseRoom;
-        ImageView ivCourseIcon;
+    static class EventViewHolder extends RecyclerView.ViewHolder {
+        TextView tvTitle, tvTime, tvLocation, tvReminder;
+        ImageView ivIcon;
 
-        public CourseViewHolder(@NonNull View itemView) {
+        EventViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvCourseName = itemView.findViewById(R.id.tv_course_name);
-            tvCourseTime = itemView.findViewById(R.id.tv_course_time);
-            tvCourseRoom = itemView.findViewById(R.id.tv_course_room);
-            ivCourseIcon = itemView.findViewById(R.id.iv_course_icon);
+            tvTitle = itemView.findViewById(R.id.tv_event_title);
+            tvTime = itemView.findViewById(R.id.tv_event_time);
+            tvLocation = itemView.findViewById(R.id.tv_event_location);
+            tvReminder = itemView.findViewById(R.id.tv_event_reminder);
+            ivIcon = itemView.findViewById(R.id.iv_event_icon);
         }
     }
 
-    static class EventViewHolder extends RecyclerView.ViewHolder {
-        TextView tvEventTitle, tvEventTime, tvEventLocation;
-        ImageView ivEventIcon;
+    static class CourseViewHolder extends RecyclerView.ViewHolder {
+        TextView tvTitle, tvTime, tvRoom, tvReminder;
+        ImageView ivIcon;
 
-        public EventViewHolder(@NonNull View itemView) {
+        CourseViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvEventTitle = itemView.findViewById(R.id.tv_event_title);
-            tvEventTime = itemView.findViewById(R.id.tv_event_time);
-            tvEventLocation = itemView.findViewById(R.id.tv_event_location);
-            ivEventIcon = itemView.findViewById(R.id.iv_event_icon);
+            tvTitle = itemView.findViewById(R.id.tv_course_title);
+            tvTime = itemView.findViewById(R.id.tv_course_time);
+            tvRoom = itemView.findViewById(R.id.tv_course_room);
+            tvReminder = itemView.findViewById(R.id.tv_course_reminder);
+            ivIcon = itemView.findViewById(R.id.iv_course_icon);
         }
     }
 }

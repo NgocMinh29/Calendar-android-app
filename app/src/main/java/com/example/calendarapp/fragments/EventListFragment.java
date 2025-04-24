@@ -12,25 +12,24 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.calendarapp.MainActivity;
 import com.example.calendarapp.R;
 import com.example.calendarapp.activities.AddEventActivity;
 import com.example.calendarapp.activities.EditEventActivity;
 import com.example.calendarapp.adapters.EventAdapter;
+import com.example.calendarapp.models.DatabaseHelper;
 import com.example.calendarapp.models.Event;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 public class EventListFragment extends Fragment implements EventAdapter.OnEventListener {
     private RecyclerView recyclerView;
     private EventAdapter adapter;
     private List<Event> eventList;
     private FloatingActionButton fabAddEvent;
+    private DatabaseHelper databaseHelper;
 
     private static final int ADD_EVENT_REQUEST = 1;
     private static final int EDIT_EVENT_REQUEST = 2;
@@ -40,11 +39,13 @@ public class EventListFragment extends Fragment implements EventAdapter.OnEventL
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_event_list, container, false);
 
+        databaseHelper = ((MainActivity) getActivity()).getDatabaseHelper();
+
         recyclerView = view.findViewById(R.id.rv_events);
         fabAddEvent = view.findViewById(R.id.fab_add_event);
 
         setupRecyclerView();
-        loadSampleEvents();
+        loadEvents();
 
         fabAddEvent.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), AddEventActivity.class);
@@ -61,30 +62,15 @@ public class EventListFragment extends Fragment implements EventAdapter.OnEventL
         recyclerView.setAdapter(adapter);
     }
 
-    private void loadSampleEvents() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        try {
-            // Sample event like in the screenshot
-            Event event = new Event(
-                    1,
-                    "Thi giữa kỳ CSDL",
-                    "Mang máy tính + máy in",
-                    dateFormat.parse("15/04/2025"),
-                    "13:00",
-                    true,
-                    60, // 1 hour reminder
-                    "Phòng máy tính"
-            );
-            eventList.add(event);
-            adapter.notifyDataSetChanged();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+    private void loadEvents() {
+        eventList.clear();
+        eventList.addAll(databaseHelper.getAllEvents());
+        adapter.notifyDataSetChanged();
     }
 
     @Override
     public void onEventClick(int position) {
-        // Handle event click
+        // Xử lý khi nhấn vào sự kiện
     }
 
     @Override
@@ -97,13 +83,32 @@ public class EventListFragment extends Fragment implements EventAdapter.OnEventL
 
     @Override
     public void onDeleteClick(int position) {
-        eventList.remove(position);
-        adapter.notifyItemRemoved(position);
+        Event event = eventList.get(position);
+
+        // Hiển thị dialog xác nhận xóa
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getContext());
+        builder.setTitle("Xác nhận xóa");
+        builder.setMessage("Bạn có chắc chắn muốn xóa sự kiện này?");
+        builder.setPositiveButton("Xóa", (dialog, which) -> {
+            databaseHelper.deleteEvent(event);
+            eventList.remove(position);
+            adapter.notifyItemRemoved(position);
+        });
+        builder.setNegativeButton("Hủy", null);
+        builder.show();
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        // Handle results from add/edit activities
+        // Cập nhật lại danh sách sau khi thêm/sửa
+        loadEvents();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Cập nhật lại danh sách khi quay lại fragment
+        loadEvents();
     }
 }

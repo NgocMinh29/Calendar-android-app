@@ -9,37 +9,39 @@ import android.database.sqlite.SQLiteOpenHelper;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
-    private static final String DATABASE_NAME = "calendar.db";
+    private static final String DATABASE_NAME = "calendar_app.db";
     private static final int DATABASE_VERSION = 1;
 
-    // Common column names
-    private static final String COLUMN_ID = "id";
-    private static final String COLUMN_NOTIFICATION = "notification";
-    private static final String COLUMN_REMINDER_MINUTES = "reminder_minutes";
-
-    // Event table
+    // Bảng Event
     private static final String TABLE_EVENTS = "events";
-    private static final String COLUMN_EVENT_TITLE = "title";
-    private static final String COLUMN_EVENT_NOTE = "note";
-    private static final String COLUMN_EVENT_DATE = "date";
-    private static final String COLUMN_EVENT_TIME = "time";
-    private static final String COLUMN_EVENT_LOCATION = "location";
+    private static final String EVENT_ID = "id";
+    private static final String EVENT_TITLE = "title";
+    private static final String EVENT_NOTE = "note";
+    private static final String EVENT_DATE = "date";
+    private static final String EVENT_TIME = "time";
+    private static final String EVENT_NOTIFICATION = "notification";
+    private static final String EVENT_REMINDER_MINUTES = "reminder_minutes";
+    private static final String EVENT_LOCATION = "location";
 
-    // Course table
+    // Bảng Course
     private static final String TABLE_COURSES = "courses";
-    private static final String COLUMN_COURSE_NAME = "name";
-    private static final String COLUMN_COURSE_ROOM = "room";
-    private static final String COLUMN_COURSE_DAY = "day_of_week";
-    private static final String COLUMN_COURSE_START_TIME = "start_time";
-    private static final String COLUMN_COURSE_END_TIME = "end_time";
-    private static final String COLUMN_COURSE_START_DATE = "start_date";
-    private static final String COLUMN_COURSE_END_DATE = "end_date";
-    private static final String COLUMN_COURSE_FREQUENCY = "week_frequency";
+    private static final String COURSE_ID = "id";
+    private static final String COURSE_NAME = "name";
+    private static final String COURSE_ROOM = "room";
+    private static final String COURSE_DAY_OF_WEEK = "day_of_week";
+    private static final String COURSE_START_TIME = "start_time";
+    private static final String COURSE_END_TIME = "end_time";
+    private static final String COURSE_START_DATE = "start_date";
+    private static final String COURSE_END_DATE = "end_date";
+    private static final String COURSE_WEEK_FREQUENCY = "week_frequency";
+    private static final String COURSE_NOTIFICATION = "notification";
+    private static final String COURSE_REMINDER_MINUTES = "reminder_minutes";
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
 
@@ -49,61 +51,61 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Create events table
+        // Tạo bảng Event
         String CREATE_EVENTS_TABLE = "CREATE TABLE " + TABLE_EVENTS + "("
-                + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + COLUMN_EVENT_TITLE + " TEXT,"
-                + COLUMN_EVENT_NOTE + " TEXT,"
-                + COLUMN_EVENT_DATE + " TEXT,"
-                + COLUMN_EVENT_TIME + " TEXT,"
-                + COLUMN_EVENT_LOCATION + " TEXT,"
-                + COLUMN_NOTIFICATION + " INTEGER,"
-                + COLUMN_REMINDER_MINUTES + " INTEGER"
+                + EVENT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + EVENT_TITLE + " TEXT,"
+                + EVENT_NOTE + " TEXT,"
+                + EVENT_DATE + " TEXT,"
+                + EVENT_TIME + " TEXT,"
+                + EVENT_NOTIFICATION + " INTEGER,"
+                + EVENT_REMINDER_MINUTES + " INTEGER,"
+                + EVENT_LOCATION + " TEXT"
                 + ")";
         db.execSQL(CREATE_EVENTS_TABLE);
 
-        // Create courses table
+        // Tạo bảng Course
         String CREATE_COURSES_TABLE = "CREATE TABLE " + TABLE_COURSES + "("
-                + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + COLUMN_COURSE_NAME + " TEXT,"
-                + COLUMN_COURSE_ROOM + " TEXT,"
-                + COLUMN_COURSE_DAY + " TEXT,"
-                + COLUMN_COURSE_START_TIME + " TEXT,"
-                + COLUMN_COURSE_END_TIME + " TEXT,"
-                + COLUMN_COURSE_START_DATE + " TEXT,"
-                + COLUMN_COURSE_END_DATE + " TEXT,"
-                + COLUMN_COURSE_FREQUENCY + " INTEGER,"
-                + COLUMN_NOTIFICATION + " INTEGER,"
-                + COLUMN_REMINDER_MINUTES + " INTEGER"
+                + COURSE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + COURSE_NAME + " TEXT,"
+                + COURSE_ROOM + " TEXT,"
+                + COURSE_DAY_OF_WEEK + " TEXT,"
+                + COURSE_START_TIME + " TEXT,"
+                + COURSE_END_TIME + " TEXT,"
+                + COURSE_START_DATE + " TEXT,"
+                + COURSE_END_DATE + " TEXT,"
+                + COURSE_WEEK_FREQUENCY + " INTEGER,"
+                + COURSE_NOTIFICATION + " INTEGER,"
+                + COURSE_REMINDER_MINUTES + " INTEGER"
                 + ")";
         db.execSQL(CREATE_COURSES_TABLE);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // Drop older tables if existed
+        // Xóa bảng cũ nếu tồn tại
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_EVENTS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_COURSES);
 
-        // Create tables again
+        // Tạo lại bảng mới
         onCreate(db);
     }
 
-    // Event CRUD operations
+    // Các phương thức CRUD cho Event
 
     public long addEvent(Event event) {
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(COLUMN_EVENT_TITLE, event.getTitle());
-        values.put(COLUMN_EVENT_NOTE, event.getNote());
-        values.put(COLUMN_EVENT_DATE, dateFormat.format(event.getDate()));
-        values.put(COLUMN_EVENT_TIME, event.getTime());
-        values.put(COLUMN_EVENT_LOCATION, event.getLocation());
-        values.put(COLUMN_NOTIFICATION, event.isNotification() ? 1 : 0);
-        values.put(COLUMN_REMINDER_MINUTES, event.getReminderMinutes());
+        values.put(EVENT_TITLE, event.getTitle());
+        values.put(EVENT_NOTE, event.getNote());
+        values.put(EVENT_DATE, dateFormat.format(event.getDate()));
+        values.put(EVENT_TIME, event.getTime());
+        values.put(EVENT_NOTIFICATION, event.isNotification() ? 1 : 0);
+        values.put(EVENT_REMINDER_MINUTES, event.getReminderMinutes());
+        values.put(EVENT_LOCATION, event.getLocation());
 
-        // Insert row
+        // Thêm vào database
         long id = db.insert(TABLE_EVENTS, null, values);
         db.close();
 
@@ -113,79 +115,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public Event getEvent(long id) {
         SQLiteDatabase db = this.getReadableDatabase();
 
-        Cursor cursor = db.query(
-                TABLE_EVENTS,
-                new String[] {
-                        COLUMN_ID,
-                        COLUMN_EVENT_TITLE,
-                        COLUMN_EVENT_NOTE,
-                        COLUMN_EVENT_DATE,
-                        COLUMN_EVENT_TIME,
-                        COLUMN_EVENT_LOCATION,
-                        COLUMN_NOTIFICATION,
-                        COLUMN_REMINDER_MINUTES
-                },
-                COLUMN_ID + "=?",
-                new String[] { String.valueOf(id) },
-                null, null, null, null
-        );
+        Cursor cursor = db.query(TABLE_EVENTS, null, EVENT_ID + "=?",
+                new String[]{String.valueOf(id)}, null, null, null, null);
 
         if (cursor != null)
             cursor.moveToFirst();
 
-        Event event = null;
-        if (cursor != null && cursor.getCount() > 0) {
-            try {
-                event = new Event(
-                        cursor.getLong(0),
-                        cursor.getString(1),
-                        cursor.getString(2),
-                        dateFormat.parse(cursor.getString(3)),
-                        cursor.getString(4),
-                        cursor.getInt(6) == 1,
-                        cursor.getInt(7),
-                        cursor.getString(5)
-                );
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-            cursor.close();
-        }
+        Event event = cursorToEvent(cursor);
+        cursor.close();
 
-        db.close();
         return event;
     }
 
     public List<Event> getAllEvents() {
         List<Event> eventList = new ArrayList<>();
 
-        String selectQuery = "SELECT * FROM " + TABLE_EVENTS + " ORDER BY " + COLUMN_EVENT_DATE + " ASC, " + COLUMN_EVENT_TIME + " ASC";
+        String selectQuery = "SELECT * FROM " + TABLE_EVENTS + " ORDER BY " + EVENT_DATE + " ASC, " + EVENT_TIME + " ASC";
 
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(selectQuery, null);
 
         if (cursor.moveToFirst()) {
             do {
-                try {
-                    Event event = new Event(
-                            cursor.getLong(0),
-                            cursor.getString(1),
-                            cursor.getString(2),
-                            dateFormat.parse(cursor.getString(3)),
-                            cursor.getString(4),
-                            cursor.getInt(6) == 1,
-                            cursor.getInt(7),
-                            cursor.getString(5)
-                    );
-                    eventList.add(event);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
+                Event event = cursorToEvent(cursor);
+                eventList.add(event);
             } while (cursor.moveToNext());
         }
 
         cursor.close();
-        db.close();
 
         return eventList;
     }
@@ -194,49 +151,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         List<Event> eventList = new ArrayList<>();
 
         String dateString = dateFormat.format(date);
+        String selectQuery = "SELECT * FROM " + TABLE_EVENTS + " WHERE " + EVENT_DATE + "=? ORDER BY " + EVENT_TIME + " ASC";
 
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(
-                TABLE_EVENTS,
-                new String[] {
-                        COLUMN_ID,
-                        COLUMN_EVENT_TITLE,
-                        COLUMN_EVENT_NOTE,
-                        COLUMN_EVENT_DATE,
-                        COLUMN_EVENT_TIME,
-                        COLUMN_EVENT_LOCATION,
-                        COLUMN_NOTIFICATION,
-                        COLUMN_REMINDER_MINUTES
-                },
-                COLUMN_EVENT_DATE + "=?",
-                new String[] { dateString },
-                null, null,
-                COLUMN_EVENT_TIME + " ASC",
-                null
-        );
+        Cursor cursor = db.rawQuery(selectQuery, new String[]{dateString});
 
         if (cursor.moveToFirst()) {
             do {
-                try {
-                    Event event = new Event(
-                            cursor.getLong(0),
-                            cursor.getString(1),
-                            cursor.getString(2),
-                            dateFormat.parse(cursor.getString(3)),
-                            cursor.getString(4),
-                            cursor.getInt(6) == 1,
-                            cursor.getInt(7),
-                            cursor.getString(5)
-                    );
-                    eventList.add(event);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
+                Event event = cursorToEvent(cursor);
+                eventList.add(event);
             } while (cursor.moveToNext());
         }
 
         cursor.close();
-        db.close();
 
         return eventList;
     }
@@ -245,54 +172,67 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(COLUMN_EVENT_TITLE, event.getTitle());
-        values.put(COLUMN_EVENT_NOTE, event.getNote());
-        values.put(COLUMN_EVENT_DATE, dateFormat.format(event.getDate()));
-        values.put(COLUMN_EVENT_TIME, event.getTime());
-        values.put(COLUMN_EVENT_LOCATION, event.getLocation());
-        values.put(COLUMN_NOTIFICATION, event.isNotification() ? 1 : 0);
-        values.put(COLUMN_REMINDER_MINUTES, event.getReminderMinutes());
+        values.put(EVENT_TITLE, event.getTitle());
+        values.put(EVENT_NOTE, event.getNote());
+        values.put(EVENT_DATE, dateFormat.format(event.getDate()));
+        values.put(EVENT_TIME, event.getTime());
+        values.put(EVENT_NOTIFICATION, event.isNotification() ? 1 : 0);
+        values.put(EVENT_REMINDER_MINUTES, event.getReminderMinutes());
+        values.put(EVENT_LOCATION, event.getLocation());
 
-        // Update row
-        int result = db.update(
-                TABLE_EVENTS,
-                values,
-                COLUMN_ID + " = ?",
-                new String[] { String.valueOf(event.getId()) }
-        );
-
-        db.close();
-        return result;
+        // Cập nhật
+        return db.update(TABLE_EVENTS, values, EVENT_ID + "=?",
+                new String[]{String.valueOf(event.getId())});
     }
 
     public void deleteEvent(Event event) {
         SQLiteDatabase db = this.getWritableDatabase();
-        db.delete(
-                TABLE_EVENTS,
-                COLUMN_ID + " = ?",
-                new String[] { String.valueOf(event.getId()) }
-        );
+        db.delete(TABLE_EVENTS, EVENT_ID + "=?",
+                new String[]{String.valueOf(event.getId())});
         db.close();
     }
 
-    // Course CRUD operations
+    private Event cursorToEvent(Cursor cursor) {
+        Event event = new Event();
+
+        event.setId(cursor.getLong(cursor.getColumnIndex(EVENT_ID)));
+        event.setTitle(cursor.getString(cursor.getColumnIndex(EVENT_TITLE)));
+        event.setNote(cursor.getString(cursor.getColumnIndex(EVENT_NOTE)));
+
+        String dateString = cursor.getString(cursor.getColumnIndex(EVENT_DATE));
+        try {
+            event.setDate(dateFormat.parse(dateString));
+        } catch (ParseException e) {
+            e.printStackTrace();
+            event.setDate(new Date()); // Mặc định là ngày hiện tại nếu có lỗi
+        }
+
+        event.setTime(cursor.getString(cursor.getColumnIndex(EVENT_TIME)));
+        event.setNotification(cursor.getInt(cursor.getColumnIndex(EVENT_NOTIFICATION)) == 1);
+        event.setReminderMinutes(cursor.getInt(cursor.getColumnIndex(EVENT_REMINDER_MINUTES)));
+        event.setLocation(cursor.getString(cursor.getColumnIndex(EVENT_LOCATION)));
+
+        return event;
+    }
+
+    // Các phương thức CRUD cho Course
 
     public long addCourse(Course course) {
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(COLUMN_COURSE_NAME, course.getName());
-        values.put(COLUMN_COURSE_ROOM, course.getRoom());
-        values.put(COLUMN_COURSE_DAY, course.getDayOfWeek());
-        values.put(COLUMN_COURSE_START_TIME, course.getStartTime());
-        values.put(COLUMN_COURSE_END_TIME, course.getEndTime());
-        values.put(COLUMN_COURSE_START_DATE, dateFormat.format(course.getStartDate()));
-        values.put(COLUMN_COURSE_END_DATE, dateFormat.format(course.getEndDate()));
-        values.put(COLUMN_COURSE_FREQUENCY, course.getWeekFrequency());
-        values.put(COLUMN_NOTIFICATION, course.isNotification() ? 1 : 0);
-        values.put(COLUMN_REMINDER_MINUTES, course.getReminderMinutes());
+        values.put(COURSE_NAME, course.getName());
+        values.put(COURSE_ROOM, course.getRoom());
+        values.put(COURSE_DAY_OF_WEEK, course.getDayOfWeek());
+        values.put(COURSE_START_TIME, course.getStartTime());
+        values.put(COURSE_END_TIME, course.getEndTime());
+        values.put(COURSE_START_DATE, dateFormat.format(course.getStartDate()));
+        values.put(COURSE_END_DATE, dateFormat.format(course.getEndDate()));
+        values.put(COURSE_WEEK_FREQUENCY, course.getWeekFrequency());
+        values.put(COURSE_NOTIFICATION, course.isNotification() ? 1 : 0);
+        values.put(COURSE_REMINDER_MINUTES, course.getReminderMinutes());
 
-        // Insert row
+        // Thêm vào database
         long id = db.insert(TABLE_COURSES, null, values);
         db.close();
 
@@ -302,88 +242,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public Course getCourse(long id) {
         SQLiteDatabase db = this.getReadableDatabase();
 
-        Cursor cursor = db.query(
-                TABLE_COURSES,
-                new String[] {
-                        COLUMN_ID,
-                        COLUMN_COURSE_NAME,
-                        COLUMN_COURSE_ROOM,
-                        COLUMN_COURSE_DAY,
-                        COLUMN_COURSE_START_TIME,
-                        COLUMN_COURSE_END_TIME,
-                        COLUMN_COURSE_START_DATE,
-                        COLUMN_COURSE_END_DATE,
-                        COLUMN_COURSE_FREQUENCY,
-                        COLUMN_NOTIFICATION,
-                        COLUMN_REMINDER_MINUTES
-                },
-                COLUMN_ID + "=?",
-                new String[] { String.valueOf(id) },
-                null, null, null, null
-        );
+        Cursor cursor = db.query(TABLE_COURSES, null, COURSE_ID + "=?",
+                new String[]{String.valueOf(id)}, null, null, null, null);
 
         if (cursor != null)
             cursor.moveToFirst();
 
-        Course course = null;
-        if (cursor != null && cursor.getCount() > 0) {
-            try {
-                course = new Course(
-                        cursor.getLong(0),
-                        cursor.getString(1),
-                        cursor.getString(2),
-                        cursor.getString(3),
-                        cursor.getString(4),
-                        cursor.getString(5),
-                        dateFormat.parse(cursor.getString(6)),
-                        dateFormat.parse(cursor.getString(7)),
-                        cursor.getInt(8),
-                        cursor.getInt(9) == 1,
-                        cursor.getInt(10)
-                );
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-            cursor.close();
-        }
+        Course course = cursorToCourse(cursor);
+        cursor.close();
 
-        db.close();
         return course;
     }
 
     public List<Course> getAllCourses() {
         List<Course> courseList = new ArrayList<>();
 
-        String selectQuery = "SELECT * FROM " + TABLE_COURSES + " ORDER BY " + COLUMN_COURSE_DAY + " ASC, " + COLUMN_COURSE_START_TIME + " ASC";
+        String selectQuery = "SELECT * FROM " + TABLE_COURSES + " ORDER BY " + COURSE_DAY_OF_WEEK + " ASC, " + COURSE_START_TIME + " ASC";
 
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(selectQuery, null);
 
         if (cursor.moveToFirst()) {
             do {
-                try {
-                    Course course = new Course(
-                            cursor.getLong(0),
-                            cursor.getString(1),
-                            cursor.getString(2),
-                            cursor.getString(3),
-                            cursor.getString(4),
-                            cursor.getString(5),
-                            dateFormat.parse(cursor.getString(6)),
-                            dateFormat.parse(cursor.getString(7)),
-                            cursor.getInt(8),
-                            cursor.getInt(9) == 1,
-                            cursor.getInt(10)
-                    );
-                    courseList.add(course);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
+                Course course = cursorToCourse(cursor);
+                courseList.add(course);
             } while (cursor.moveToNext());
         }
 
         cursor.close();
-        db.close();
 
         return courseList;
     }
@@ -391,92 +277,111 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public List<Course> getCoursesForDay(String dayOfWeek) {
         List<Course> courseList = new ArrayList<>();
 
+        String selectQuery = "SELECT * FROM " + TABLE_COURSES + " WHERE " + COURSE_DAY_OF_WEEK + "=? ORDER BY " + COURSE_START_TIME + " ASC";
+
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(
-                TABLE_COURSES,
-                new String[] {
-                        COLUMN_ID,
-                        COLUMN_COURSE_NAME,
-                        COLUMN_COURSE_ROOM,
-                        COLUMN_COURSE_DAY,
-                        COLUMN_COURSE_START_TIME,
-                        COLUMN_COURSE_END_TIME,
-                        COLUMN_COURSE_START_DATE,
-                        COLUMN_COURSE_END_DATE,
-                        COLUMN_COURSE_FREQUENCY,
-                        COLUMN_NOTIFICATION,
-                        COLUMN_REMINDER_MINUTES
-                },
-                COLUMN_COURSE_DAY + "=?",
-                new String[] { dayOfWeek },
-                null, null,
-                COLUMN_COURSE_START_TIME + " ASC",
-                null
-        );
+        Cursor cursor = db.rawQuery(selectQuery, new String[]{dayOfWeek});
 
         if (cursor.moveToFirst()) {
             do {
-                try {
-                    Course course = new Course(
-                            cursor.getLong(0),
-                            cursor.getString(1),
-                            cursor.getString(2),
-                            cursor.getString(3),
-                            cursor.getString(4),
-                            cursor.getString(5),
-                            dateFormat.parse(cursor.getString(6)),
-                            dateFormat.parse(cursor.getString(7)),
-                            cursor.getInt(8),
-                            cursor.getInt(9) == 1,
-                            cursor.getInt(10)
-                    );
+                Course course = cursorToCourse(cursor);
+
+                // Kiểm tra xem khóa học có trong khoảng thời gian hiện tại không
+                Date currentDate = new Date();
+                if (currentDate.after(course.getStartDate()) && currentDate.before(course.getEndDate())) {
                     courseList.add(course);
-                } catch (ParseException e) {
-                    e.printStackTrace();
                 }
             } while (cursor.moveToNext());
         }
 
         cursor.close();
-        db.close();
 
         return courseList;
+    }
+
+    public List<Course> getActiveCoursesForDay(String dayOfWeek) {
+        List<Course> courseList = new ArrayList<>();
+        Date currentDate = new Date();
+
+        String selectQuery = "SELECT * FROM " + TABLE_COURSES + " WHERE " + COURSE_DAY_OF_WEEK + "=? ORDER BY " + COURSE_START_TIME + " ASC";
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, new String[]{dayOfWeek});
+
+        if (cursor.moveToFirst()) {
+            do {
+                Course course = cursorToCourse(cursor);
+
+                // Kiểm tra xem khóa học có trong khoảng thời gian hiện tại không
+                if (isDateInRange(currentDate, course.getStartDate(), course.getEndDate())) {
+                    courseList.add(course);
+                }
+            } while (cursor.moveToNext());
+        }
+
+        cursor.close();
+
+        return courseList;
+    }
+
+    private boolean isDateInRange(Date date, Date startDate, Date endDate) {
+        return (date.equals(startDate) || date.after(startDate)) &&
+                (date.equals(endDate) || date.before(endDate));
     }
 
     public int updateCourse(Course course) {
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(COLUMN_COURSE_NAME, course.getName());
-        values.put(COLUMN_COURSE_ROOM, course.getRoom());
-        values.put(COLUMN_COURSE_DAY, course.getDayOfWeek());
-        values.put(COLUMN_COURSE_START_TIME, course.getStartTime());
-        values.put(COLUMN_COURSE_END_TIME, course.getEndTime());
-        values.put(COLUMN_COURSE_START_DATE, dateFormat.format(course.getStartDate()));
-        values.put(COLUMN_COURSE_END_DATE, dateFormat.format(course.getEndDate()));
-        values.put(COLUMN_COURSE_FREQUENCY, course.getWeekFrequency());
-        values.put(COLUMN_NOTIFICATION, course.isNotification() ? 1 : 0);
-        values.put(COLUMN_REMINDER_MINUTES, course.getReminderMinutes());
+        values.put(COURSE_NAME, course.getName());
+        values.put(COURSE_ROOM, course.getRoom());
+        values.put(COURSE_DAY_OF_WEEK, course.getDayOfWeek());
+        values.put(COURSE_START_TIME, course.getStartTime());
+        values.put(COURSE_END_TIME, course.getEndTime());
+        values.put(COURSE_START_DATE, dateFormat.format(course.getStartDate()));
+        values.put(COURSE_END_DATE, dateFormat.format(course.getEndDate()));
+        values.put(COURSE_WEEK_FREQUENCY, course.getWeekFrequency());
+        values.put(COURSE_NOTIFICATION, course.isNotification() ? 1 : 0);
+        values.put(COURSE_REMINDER_MINUTES, course.getReminderMinutes());
 
-        // Update row
-        int result = db.update(
-                TABLE_COURSES,
-                values,
-                COLUMN_ID + " = ?",
-                new String[] { String.valueOf(course.getId()) }
-        );
-
-        db.close();
-        return result;
+        // Cập nhật
+        return db.update(TABLE_COURSES, values, COURSE_ID + "=?",
+                new String[]{String.valueOf(course.getId())});
     }
 
     public void deleteCourse(Course course) {
         SQLiteDatabase db = this.getWritableDatabase();
-        db.delete(
-                TABLE_COURSES,
-                COLUMN_ID + " = ?",
-                new String[] { String.valueOf(course.getId()) }
-        );
+        db.delete(TABLE_COURSES, COURSE_ID + "=?",
+                new String[]{String.valueOf(course.getId())});
         db.close();
+    }
+
+    private Course cursorToCourse(Cursor cursor) {
+        Course course = new Course();
+
+        course.setId(cursor.getLong(cursor.getColumnIndex(COURSE_ID)));
+        course.setName(cursor.getString(cursor.getColumnIndex(COURSE_NAME)));
+        course.setRoom(cursor.getString(cursor.getColumnIndex(COURSE_ROOM)));
+        course.setDayOfWeek(cursor.getString(cursor.getColumnIndex(COURSE_DAY_OF_WEEK)));
+        course.setStartTime(cursor.getString(cursor.getColumnIndex(COURSE_START_TIME)));
+        course.setEndTime(cursor.getString(cursor.getColumnIndex(COURSE_END_TIME)));
+
+        String startDateString = cursor.getString(cursor.getColumnIndex(COURSE_START_DATE));
+        String endDateString = cursor.getString(cursor.getColumnIndex(COURSE_END_DATE));
+
+        try {
+            course.setStartDate(dateFormat.parse(startDateString));
+            course.setEndDate(dateFormat.parse(endDateString));
+        } catch (ParseException e) {
+            e.printStackTrace();
+            course.setStartDate(new Date());
+            course.setEndDate(new Date());
+        }
+
+        course.setWeekFrequency(cursor.getInt(cursor.getColumnIndex(COURSE_WEEK_FREQUENCY)));
+        course.setNotification(cursor.getInt(cursor.getColumnIndex(COURSE_NOTIFICATION)) == 1);
+        course.setReminderMinutes(cursor.getInt(cursor.getColumnIndex(COURSE_REMINDER_MINUTES)));
+
+        return course;
     }
 }
