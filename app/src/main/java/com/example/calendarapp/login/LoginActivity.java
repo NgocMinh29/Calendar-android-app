@@ -12,7 +12,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
-import com.example.calendarapp.MainActivity;
+import com.example.calendarapp.MainActivity_Login;
 import com.example.calendarapp.R;
 import com.example.calendarapp.sign_up.SignupActivity;
 import com.example.calendarapp.forgot_password.ForgotPasswordActivity;
@@ -254,7 +254,7 @@ public class LoginActivity extends AppCompatActivity {
     private void navigateToMainActivity(String email) {
         // Trong thực tế, bạn sẽ chuyển đến màn hình chính của ứng dụng
         // Đây là mã giả để mô phỏng quá trình
-        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        Intent intent = new Intent(LoginActivity.this, MainActivity_Login.class);
         if (email != null) {
             intent.putExtra("EMAIL", email);
         }
