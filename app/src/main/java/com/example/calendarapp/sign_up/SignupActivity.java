@@ -8,7 +8,16 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import android.app.ProgressDialog;
+import java.io.IOException;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import com.example.calendarapp.api.ApiClient;
+import com.example.calendarapp.api.ApiService;
+import com.example.calendarapp.models.ApiResponse;
+import com.example.calendarapp.models.RegisterRequest;
+import com.example.calendarapp.models.User;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
@@ -202,30 +211,92 @@ public class SignupActivity extends AppCompatActivity {
     }
 
     private void performSignup(String email, String password) {
-        // Trong thực tế, bạn sẽ gửi yêu cầu đến server để đăng ký tài khoản
-        // Đây là mã giả để mô phỏng quá trình
+        // Hiển thị ProgressDialog
+        ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Đang đăng ký...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
 
-        // Lưu thông tin tài khoản vào SharedPreferences (chỉ để demo)
-        SharedPreferences userPrefs = getSharedPreferences("UserData", MODE_PRIVATE);
-        userPrefs.edit()
-                .putString(email + "_password", password)
-                .apply();
+        // Khởi tạo API service
+        ApiService apiService = ApiClient.getClient().create(ApiService.class);
 
-        // Tạo mã xác nhận và lưu vào SharedPreferences
-        String verificationCode = generateRandomCode();
-        getSharedPreferences("SignupVerification", MODE_PRIVATE)
-                .edit()
-                .putString("verification_code", verificationCode)
-                .putString("email", email)
-                .apply();
+        // Tạo request
+        // Thay đổi dòng nà
 
-        // Thông báo cho người dùng
-        Toast.makeText(this, "Đã gửi mã xác nhận đến " + email, Toast.LENGTH_LONG).show();
+// Thành
+        String username = email.split("@")[0]; // Tạo username từ email
+        String fullName = ""; // Để trống hoặc lấy từ một EditText khác nếu có
+        RegisterRequest registerRequest = new RegisterRequest(username, email, password, fullName);
 
-        // Chuyển đến màn hình xác minh
-        Intent intent = new Intent(SignupActivity.this, SignupVerificationActivity.class);
-        intent.putExtra("EMAIL", email);
-        startActivity(intent);
+        // Gọi API
+        Call<ApiResponse<User>> call = apiService.register(registerRequest);
+        call.enqueue(new Callback<ApiResponse<User>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<User>> call, Response<ApiResponse<User>> response) {
+                // Ẩn ProgressDialog
+                progressDialog.dismiss();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<User> apiResponse = response.body();
+
+                    if (apiResponse.isStatus()) {
+                        // Đăng ký thành công
+                        User user = apiResponse.getData();
+
+                        Toast.makeText(SignupActivity.this, "Đăng ký thành công", Toast.LENGTH_SHORT).show();
+
+                        // Lưu thông tin tài khoản vào SharedPreferences (chỉ để demo)
+                        SharedPreferences userPrefs = getSharedPreferences("UserData", MODE_PRIVATE);
+                        userPrefs.edit()
+                                .putString(email + "_password", password)
+                                .apply();
+
+                        // Chuyển đến màn hình xác minh
+                        Intent intent = new Intent(SignupActivity.this, SignupVerificationActivity.class);
+                        intent.putExtra("EMAIL", email);
+                        startActivity(intent);
+                    } else {
+                        // Đăng ký thất bại
+                        Toast.makeText(SignupActivity.this, apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    // Lỗi từ server
+                    try {
+                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "Unknown error";
+                        Toast.makeText(SignupActivity.this, "Lỗi: " + errorBody, Toast.LENGTH_SHORT).show();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Toast.makeText(SignupActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<User>> call, Throwable t) {
+                // Ẩn ProgressDialog
+                progressDialog.dismiss();
+
+                // Lỗi kết nối
+                Toast.makeText(SignupActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+
+                // Fallback: Mô phỏng đăng ký thành công (chỉ để demo)
+                // Tạo mã xác nhận và lưu vào SharedPreferences
+                String verificationCode = generateRandomCode();
+                getSharedPreferences("SignupVerification", MODE_PRIVATE)
+                        .edit()
+                        .putString("verification_code", verificationCode)
+                        .putString("email", email)
+                        .apply();
+
+                // Thông báo cho người dùng
+                Toast.makeText(SignupActivity.this, "Đã gửi mã xác nhận đến " + email, Toast.LENGTH_LONG).show();
+
+                // Chuyển đến màn hình xác minh
+                Intent intent = new Intent(SignupActivity.this, SignupVerificationActivity.class);
+                intent.putExtra("EMAIL", email);
+                startActivity(intent);
+            }
+        });
     }
 
     // Tạo mã xác nhận ngẫu nhiên 6 chữ số
