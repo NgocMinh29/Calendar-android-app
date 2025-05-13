@@ -1,5 +1,6 @@
 package com.example.calendarapp.forgot_password;
-
+import java.io.InputStream;
+import android.widget.LinearLayout;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -11,9 +12,26 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
-
+import android.app.ProgressDialog;
+import android.os.AsyncTask;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import org.json.JSONObject;
 import androidx.appcompat.app.AppCompatActivity;
-
+import android.app.ProgressDialog;
+import android.util.Log;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import org.json.JSONException;
+import org.json.JSONObject;
 import com.example.calendarapp.R;
 
 import java.util.regex.Pattern;
@@ -27,6 +45,8 @@ public class SetNewPasswordActivity extends AppCompatActivity {
     private String email;
     private boolean isNewPasswordVisible = false;
     private boolean isConfirmPasswordVisible = false;
+    // Thêm biến ProgressDialog ở đây
+    private ProgressDialog progressDialog;
 
     // Mẫu kiểm tra mật khẩu mạnh
     private static final Pattern PASSWORD_PATTERN =
@@ -129,20 +149,192 @@ public class SetNewPasswordActivity extends AppCompatActivity {
     private void resetPassword() {
         String newPassword = newPasswordEditText.getText().toString();
 
-        // Trong thực tế, bạn sẽ gửi yêu cầu đến server để cập nhật mật khẩu
-        // Đây là mã giả để mô phỏng quá trình
+        // Khởi tạo và hiển thị ProgressDialog
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Đang cập nhật mật khẩu...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
 
-        // Lưu mật khẩu mới vào SharedPreferences (chỉ để demo)
-        // Trong ứng dụng thực tế, mật khẩu sẽ được lưu trữ an toàn trên server
-        getSharedPreferences("UserData", MODE_PRIVATE)
-                .edit()
-                .putString(email + "_password", newPassword)
-                .apply();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                HttpURLConnection conn = null;
+                try {
+                    // Sửa URL từ calendar_api thành schedule_api
+                    URL url = new URL("http://10.0.2.2/schedule_api/update_password.php");
 
-        // Chuyển đến màn hình thành công
-        Intent intent = new Intent(SetNewPasswordActivity.this, ResetSuccessActivity.class);
-        startActivity(intent);
-        finish();
+                    Log.d("API_REQUEST", "Sending request to: " + url.toString());
+
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                    conn.setDoOutput(true);
+                    conn.setConnectTimeout(15000);
+
+                    // Chuẩn bị dữ liệu để gửi
+                    String data = "email=" + URLEncoder.encode(email, "UTF-8") +
+                            "&password=" + URLEncoder.encode(newPassword, "UTF-8");
+
+                    Log.d("API_REQUEST", "Data: " + data);
+
+                    // Gửi dữ liệu
+                    OutputStream os = conn.getOutputStream();
+                    os.write(data.getBytes("UTF-8"));
+                    os.close();
+
+                    // Đọc phản hồi từ server
+                    int responseCode = conn.getResponseCode();
+                    Log.d("API_RESPONSE", "Response code: " + responseCode);
+
+                    // Đọc phản hồi dù là thành công hay lỗi
+                    InputStream inputStream;
+                    if (responseCode >= 200 && responseCode < 300) {
+                        inputStream = conn.getInputStream();
+                    } else {
+                        inputStream = conn.getErrorStream();
+                    }
+
+                    BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+                    br.close();
+
+                    // Log phản hồi thô để debug
+                    final String responseStr = response.toString();
+                    Log.d("API_RESPONSE", "Raw response: " + responseStr);
+
+                    // Kiểm tra xem phản hồi có phải là JSON hợp lệ không
+                    if (responseStr.trim().startsWith("{") && responseStr.trim().endsWith("}")) {
+                        try {
+                            // Phân tích phản hồi JSON
+                            JSONObject jsonResponse = new JSONObject(responseStr);
+                            final boolean success = jsonResponse.getBoolean("success");
+                            final String message = jsonResponse.getString("message");
+
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    progressDialog.dismiss();
+
+                                    if (success) {
+                                        // Lưu mật khẩu mới vào SharedPreferences (tùy chọn)
+                                        getSharedPreferences("UserData", MODE_PRIVATE)
+                                                .edit()
+                                                .putString(email + "_password", newPassword)
+                                                .apply();
+
+                                        // Chuyển đến màn hình thành công
+                                        Intent intent = new Intent(SetNewPasswordActivity.this, ResetSuccessActivity.class);
+                                        startActivity(intent);
+                                        finish();
+                                    } else {
+                                        // Hiển thị thông báo lỗi
+                                        Toast.makeText(SetNewPasswordActivity.this, message, Toast.LENGTH_LONG).show();
+                                    }
+                                }
+                            });
+                        } catch (JSONException e) {
+                            showError("Lỗi phân tích JSON: " + e.getMessage() + "\nPhản hồi: " + responseStr);
+                        }
+                    } else {
+                        showError("Phản hồi không phải là JSON hợp lệ: " + responseStr);
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    showError("Lỗi kết nối: " + e.getMessage());
+                } finally {
+                    if (conn != null) {
+                        conn.disconnect();
+                    }
+                }
+            }
+        }).start();
+    }
+    private void testConnection() {
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Đang kiểm tra kết nối...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                HttpURLConnection conn = null;
+                try {
+                    // Thử kết nối đến file test.php
+                    URL url = new URL("http://10.0.2.2/schedule_api/test.php");
+
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                    conn.setDoOutput(true);
+                    conn.setConnectTimeout(15000);
+
+                    // Gửi dữ liệu test
+                    String data = "test_email=test@example.com&test_password=password123";
+
+                    OutputStream os = conn.getOutputStream();
+                    os.write(data.getBytes("UTF-8"));
+                    os.close();
+
+                    // Đọc phản hồi
+                    int responseCode = conn.getResponseCode();
+
+                    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+                    br.close();
+
+                    final String responseStr = response.toString();
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressDialog.dismiss();
+                            Toast.makeText(SetNewPasswordActivity.this,
+                                    "Kết nối thành công: " + responseStr,
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
+
+                } catch (final Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressDialog.dismiss();
+                            Toast.makeText(SetNewPasswordActivity.this,
+                                    "Lỗi kết nối: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } finally {
+                    if (conn != null) {
+                        conn.disconnect();
+                    }
+                }
+            }
+        }).start();
+    }
+    // Helper method để hiển thị lỗi trên UI thread
+    private void showError(final String errorMessage) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (progressDialog != null && progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                }
+                Toast.makeText(SetNewPasswordActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                Log.e("RESET_PASSWORD", errorMessage);
+            }
+        });
     }
 
     // Hiển thị/ẩn mật khẩu mới

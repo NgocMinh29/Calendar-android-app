@@ -15,7 +15,14 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.calendarapp.R;
-
+import android.app.ProgressDialog;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import org.json.JSONObject;
 public class VerificationActivity extends AppCompatActivity {
 
     private EditText digit1, digit2, digit3, digit4;
@@ -25,7 +32,86 @@ public class VerificationActivity extends AppCompatActivity {
     private String email;
     private CountDownTimer resendTimer;
     private boolean canResend = true;
+    private void requestVerificationCode() {
+        // Show progress dialog
+        ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Sending verification code...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
 
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                HttpURLConnection conn = null;
+                try {
+                    URL url = new URL("http://10.0.2.2/schedule_api/send_verification_code.php");
+
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                    conn.setDoOutput(true);
+                    conn.setConnectTimeout(15000);
+
+                    // Prepare data
+                    String data = "email=" + URLEncoder.encode(email, "UTF-8") +
+                            "&type=" + URLEncoder.encode("reset", "UTF-8");
+
+                    // Send data
+                    OutputStream os = conn.getOutputStream();
+                    os.write(data.getBytes("UTF-8"));
+                    os.close();
+
+                    // Get response code
+                    int responseCode = conn.getResponseCode();
+
+                    // Read response
+                    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+                    br.close();
+
+                    final String responseStr = response.toString();
+
+                    // Parse JSON response
+                    JSONObject jsonResponse = new JSONObject(responseStr);
+                    final boolean success = jsonResponse.getBoolean("status");
+                    final String message = jsonResponse.getString("message");
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressDialog.dismiss();
+                            Toast.makeText(VerificationActivity.this, message, Toast.LENGTH_LONG).show();
+
+                            if (success) {
+                                // Start the resend timer
+                                startResendTimer();
+                            }
+                        }
+                    });
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    final String errorMessage = e.getMessage();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressDialog.dismiss();
+                            Toast.makeText(VerificationActivity.this,
+                                    "Error: " + errorMessage, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } finally {
+                    if (conn != null) {
+                        conn.disconnect();
+                    }
+                }
+            }
+        }).start();
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,7 +147,10 @@ public class VerificationActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
             }
-        });
+
+        }
+
+        );
 
         // Xử lý sự kiện khi nhấn nút quay lại
         backButton.setOnClickListener(new View.OnClickListener() {
@@ -84,6 +173,8 @@ public class VerificationActivity extends AppCompatActivity {
 
         // Tự động focus vào ô đầu tiên
         digit1.requestFocus();
+        requestVerificationCode();
+        startResendTimer();
     }
 
     // Thiết lập chuyển focus tự động giữa các ô nhập mã
@@ -168,40 +259,101 @@ public class VerificationActivity extends AppCompatActivity {
             return false;
         }
 
-        // Kiểm tra mã xác nhận có đúng không
-        String savedCode = getSharedPreferences("ForgotPassword", MODE_PRIVATE)
-                .getString("verification_code", "");
+        // Verify the code with the server
+        verifyCode(enteredCode);
 
-        if (!enteredCode.equals(savedCode) && !enteredCode.equals("1234")) { // 1234 là mã mặc định để test
-            Toast.makeText(this, "Mã xác nhận không đúng", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-
-        return true;
+        // Return false here because the actual verification happens asynchronously
+        return false;
     }
 
     // Gửi lại mã xác nhận
     private void resendVerificationCode() {
-        // Tạo mã xác nhận mới
-        String newVerificationCode = generateRandomCode();
-
-        // Lưu mã mới vào SharedPreferences
-        getSharedPreferences("ForgotPassword", MODE_PRIVATE)
-                .edit()
-                .putString("verification_code", newVerificationCode)
-                .apply();
-
-        // Thông báo cho người dùng
-        Toast.makeText(this, "Đã gửi lại mã xác nhận đến " + email, Toast.LENGTH_LONG).show();
-
-        // Xóa các ô nhập mã hiện tại
-        digit1.setText("");
-        digit2.setText("");
-        digit3.setText("");
-        digit4.setText("");
-        digit1.requestFocus();
+        requestVerificationCode();
     }
+    private void verifyCode(String enteredCode) {
+        // Show progress dialog
+        ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Verifying code...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
 
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                HttpURLConnection conn = null;
+                try {
+                    URL url = new URL("http://10.0.2.2/schedule_api/verify_code.php");
+
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                    conn.setDoOutput(true);
+                    conn.setConnectTimeout(15000);
+
+                    // Prepare data
+                    String data = "email=" + URLEncoder.encode(email, "UTF-8") +
+                            "&code=" + URLEncoder.encode(enteredCode, "UTF-8") +
+                            "&type=" + URLEncoder.encode("reset", "UTF-8");
+
+                    // Send data
+                    OutputStream os = conn.getOutputStream();
+                    os.write(data.getBytes("UTF-8"));
+                    os.close();
+
+                    // Get response code
+                    int responseCode = conn.getResponseCode();
+
+                    // Read response
+                    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+                    br.close();
+
+                    final String responseStr = response.toString();
+
+                    // Parse JSON response
+                    JSONObject jsonResponse = new JSONObject(responseStr);
+                    final boolean success = jsonResponse.getBoolean("status");
+                    final String message = jsonResponse.getString("message");
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressDialog.dismiss();
+
+                            if (success) {
+                                // Proceed to set new password
+                                Intent intent = new Intent(VerificationActivity.this, SetNewPasswordActivity.class);
+                                intent.putExtra("EMAIL", email);
+                                startActivity(intent);
+                            } else {
+                                Toast.makeText(VerificationActivity.this, message, Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    });
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    final String errorMessage = e.getMessage();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressDialog.dismiss();
+                            Toast.makeText(VerificationActivity.this,
+                                    "Error: " + errorMessage, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } finally {
+                    if (conn != null) {
+                        conn.disconnect();
+                    }
+                }
+            }
+        }).start();
+    }
     // Bắt đầu đếm ngược thời gian gửi lại mã
     private void startResendTimer() {
         canResend = false;

@@ -8,10 +8,26 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import android.app.ProgressDialog;
+import java.io.IOException;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import com.example.calendarapp.api.ApiClient;
+import com.example.calendarapp.api.ApiService;
+import com.example.calendarapp.models.ApiResponse;
+import com.example.calendarapp.models.RegisterRequest;
+import com.example.calendarapp.models.User;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
-
+import android.util.Log;
+import org.json.JSONObject;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import com.example.calendarapp.MainActivity_Login;
 import com.example.calendarapp.R;
 import com.example.calendarapp.forgot_password.ForgotPasswordActivity;
@@ -192,8 +208,8 @@ public class SignupActivity extends AppCompatActivity {
                 focusView.requestFocus();
             }
         } else {
-            // Thực hiện đăng ký
-            performSignup(email, password);
+            // Kiểm tra email đã tồn tại chưa, sau đó chuyển đến màn hình xác minh
+            checkEmailAndProceed(email, password);
         }
     }
 
@@ -201,37 +217,155 @@ public class SignupActivity extends AppCompatActivity {
         return EMAIL_PATTERN.matcher(email).matches();
     }
 
-    private void performSignup(String email, String password) {
-        // Trong thực tế, bạn sẽ gửi yêu cầu đến server để đăng ký tài khoản
-        // Đây là mã giả để mô phỏng quá trình
 
-        // Lưu thông tin tài khoản vào SharedPreferences (chỉ để demo)
-        SharedPreferences userPrefs = getSharedPreferences("UserData", MODE_PRIVATE);
-        userPrefs.edit()
-                .putString(email + "_password", password)
-                .apply();
 
-        // Tạo mã xác nhận và lưu vào SharedPreferences
-        String verificationCode = generateRandomCode();
-        getSharedPreferences("SignupVerification", MODE_PRIVATE)
-                .edit()
-                .putString("verification_code", verificationCode)
-                .putString("email", email)
-                .apply();
+    // Replace the checkEmailAndProceed method with this improved version
+    private void checkEmailAndProceed(final String email, final String password) {
+        // Hiển thị ProgressDialog
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Đang kiểm tra...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
 
-        // Thông báo cho người dùng
-        Toast.makeText(this, "Đã gửi mã xác nhận đến " + email, Toast.LENGTH_LONG).show();
+        // Sử dụng HttpURLConnection thay vì Retrofit
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                HttpURLConnection conn = null;
+                try {
+                    URL url = new URL("http://10.0.2.2/schedule_api/check_email.php");
+
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                    conn.setDoOutput(true);
+                    conn.setConnectTimeout(15000);
+
+                    // Chuẩn bị dữ liệu
+                    String data = "email=" + URLEncoder.encode(email, "UTF-8");
+
+                    // Gửi dữ liệu
+                    OutputStream os = conn.getOutputStream();
+                    os.write(data.getBytes("UTF-8"));
+                    os.close();
+
+                    // Lấy mã phản hồi
+                    int responseCode = conn.getResponseCode();
+                    Log.d("SignupActivity", "Response code: " + responseCode);
+
+                    // Đọc phản hồi
+                    BufferedReader br;
+                    if (responseCode >= 200 && responseCode < 300) {
+                        br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    } else {
+                        br = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
+                    }
+
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+                    br.close();
+
+                    final String responseStr = response.toString();
+                    Log.d("SignupActivity", "Response: " + responseStr);
+
+                    // Kiểm tra xem phản hồi có phải là JSON hợp lệ không
+                    if (responseStr.trim().startsWith("{") && responseStr.trim().endsWith("}")) {
+                        try {
+                            // Phân tích phản hồi JSON
+                            JSONObject jsonResponse = new JSONObject(responseStr);
+                            final boolean success = jsonResponse.getBoolean("status");
+                            final String message = jsonResponse.getString("message");
+                            final boolean emailExists = jsonResponse.has("data") ? jsonResponse.getBoolean("data") : false;
+
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    progressDialog.dismiss();
+
+                                    if (success) {
+                                        if (emailExists) {
+                                            // Email đã tồn tại
+                                            emailInputLayout.setError("Email này đã được sử dụng");
+                                            emailEditText.requestFocus();
+                                        } else {
+                                            // Email chưa tồn tại, chuyển đến màn hình xác minh
+                                            proceedToVerification(email, password);
+                                        }
+                                    } else {
+                                        // Lỗi từ API
+                                        Toast.makeText(SignupActivity.this, message, Toast.LENGTH_SHORT).show();
+                                        // Fallback: Vẫn tiếp tục để demo
+                                        proceedToVerification(email, password);
+                                    }
+                                }
+                            });
+                        } catch (Exception e) {
+                            final String jsonError = e.getMessage();
+                            Log.e("SignupActivity", "JSON parsing error: " + jsonError);
+
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    progressDialog.dismiss();
+                                    Toast.makeText(SignupActivity.this,
+                                            "Lỗi phân tích JSON: " + jsonError, Toast.LENGTH_LONG).show();
+                                    // Fallback: Vẫn tiếp tục để demo
+                                    proceedToVerification(email, password);
+                                }
+                            });
+                        }
+                    } else {
+                        // Phản hồi không phải là JSON
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                progressDialog.dismiss();
+                                Toast.makeText(SignupActivity.this,
+                                        "Phản hồi không phải là JSON hợp lệ", Toast.LENGTH_LONG).show();
+                                // Fallback: Vẫn tiếp tục để demo
+                                proceedToVerification(email, password);
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    final String errorMessage = e.getMessage();
+                    Log.e("SignupActivity", "Error: " + errorMessage);
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressDialog.dismiss();
+                            Toast.makeText(SignupActivity.this,
+                                    "Lỗi: " + errorMessage, Toast.LENGTH_LONG).show();
+                            // Fallback: Vẫn tiếp tục để demo
+                            proceedToVerification(email, password);
+                        }
+                    });
+                } finally {
+                    if (conn != null) {
+                        conn.disconnect();
+                    }
+                }
+            }
+        }).start();
+    }
+
+    private void proceedToVerification(String email, String password) {
+        // Tạo username từ email
+        String username = email.split("@")[0];
+        String fullName = ""; // Để trống hoặc lấy từ một EditText khác nếu có
 
         // Chuyển đến màn hình xác minh
         Intent intent = new Intent(SignupActivity.this, SignupVerificationActivity.class);
         intent.putExtra("EMAIL", email);
+        intent.putExtra("USERNAME", username);
+        intent.putExtra("PASSWORD", password);
+        intent.putExtra("FULL_NAME", fullName);
         startActivity(intent);
-    }
-
-    // Tạo mã xác nhận ngẫu nhiên 6 chữ số
-    private String generateRandomCode() {
-        int code = (int) (Math.random() * 900000) + 100000; // Tạo số ngẫu nhiên từ 100000 đến 999999
-        return String.valueOf(code);
     }
 
     private void navigateToMainActivity(String email) {

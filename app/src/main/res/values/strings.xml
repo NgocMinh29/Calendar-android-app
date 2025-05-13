@@ -43,4 +43,9 @@
     <string name="end_date">Ngày kết thúc</string>
     <string name="frequency">Cách tuần</string>
     <string name="choose">Chọn</string>
+
+    <!-- Facebook Login -->
+    <string name="facebook_app_id">1955915458485189</string>
+    <string name="fb_login_protocol_scheme">1955915458485189</string>
+    <string name="facebook_client_token">eaaa4c30c605cfb53d2c91288f017363</string>
 </resources>

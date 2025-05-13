@@ -1,5 +1,6 @@
 package com.example.calendarapp;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 
@@ -11,9 +12,11 @@ import com.example.calendarapp.fragments.CalendarFragment;
 import com.example.calendarapp.fragments.CourseListFragment;
 import com.example.calendarapp.fragments.EventListFragment;
 import com.example.calendarapp.fragments.SettingsFragment;
+import com.example.calendarapp.login.LoginActivity;
 import com.example.calendarapp.models.Course;
 import com.example.calendarapp.models.DatabaseHelper;
 import com.example.calendarapp.models.Event;
+import com.example.calendarapp.utils.SessionManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.text.ParseException;
@@ -24,10 +27,24 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener {
     private BottomNavigationView bottomNavigationView;
     private DatabaseHelper databaseHelper;
+    private SessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Khởi tạo SessionManager
+        sessionManager = new SessionManager(this);
+
+        // Kiểm tra trạng thái đăng nhập
+        if (!sessionManager.isLoggedIn() && !sessionManager.isGuest()) {
+            // Nếu chưa đăng nhập và không phải khách, chuyển đến màn hình đăng nhập
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_main);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
@@ -131,5 +148,9 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
     public DatabaseHelper getDatabaseHelper() {
         return databaseHelper;
+    }
+
+    public SessionManager getSessionManager() {
+        return sessionManager;
     }
 }
