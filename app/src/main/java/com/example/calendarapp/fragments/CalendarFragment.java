@@ -1,12 +1,15 @@
 package com.example.calendarapp.fragments;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -14,7 +17,6 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.calendarapp.MainActivity;
 import com.example.calendarapp.R;
 import com.example.calendarapp.activities.AddCourseActivity;
 import com.example.calendarapp.activities.AddEventActivity;
@@ -22,11 +24,13 @@ import com.example.calendarapp.activities.EditCourseActivity;
 import com.example.calendarapp.activities.EditEventActivity;
 import com.example.calendarapp.adapters.CalendarEventAdapter;
 import com.example.calendarapp.models.Course;
-import com.example.calendarapp.models.DatabaseHelper;
 import com.example.calendarapp.models.Event;
+import com.example.calendarapp.utils.ApiHelper;
+import com.example.calendarapp.utils.SessionManager;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -35,13 +39,17 @@ import java.util.List;
 import java.util.Locale;
 
 public class CalendarFragment extends Fragment implements CalendarEventAdapter.OnCalendarItemListener {
+    private static final String TAG = "CalendarFragment";
+
     private TextView tvMonth;
     private TabLayout tabDays;
     private RecyclerView rvCalendarItems;
     private FloatingActionButton fabAddCalendarItem;
     private List<Object> calendarItems;
     private CalendarEventAdapter adapter;
-    private DatabaseHelper databaseHelper;
+    private ApiHelper apiHelper;
+    private SessionManager sessionManager;
+    private ProgressDialog progressDialog;
 
     private String[] dayNames = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"};
     private Calendar currentDate = Calendar.getInstance();
@@ -51,7 +59,8 @@ public class CalendarFragment extends Fragment implements CalendarEventAdapter.O
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_calendar, container, false);
 
-        databaseHelper = ((MainActivity) getActivity()).getDatabaseHelper();
+        apiHelper = new ApiHelper(getContext());
+        sessionManager = new SessionManager(getContext());
 
         tvMonth = view.findViewById(R.id.tv_month);
         tabDays = view.findViewById(R.id.tab_days);
@@ -63,8 +72,11 @@ public class CalendarFragment extends Fragment implements CalendarEventAdapter.O
         loadCalendarItems();
 
         fabAddCalendarItem.setOnClickListener(v -> {
-            // Hiển thị dialog chọn thêm sự kiện hoặc môn học
-            showAddOptionsDialog();
+            if (sessionManager.canPerformApiOperations()) {
+                showAddOptionsDialog();
+            } else {
+                Toast.makeText(getContext(), "Vui lòng đăng nhập để thêm mới", Toast.LENGTH_SHORT).show();
+            }
         });
 
         return view;
@@ -176,22 +188,113 @@ public class CalendarFragment extends Fragment implements CalendarEventAdapter.O
     }
 
     private void loadCalendarItemsForDay(String dayOfWeek) {
+        Log.d(TAG, "Loading calendar items for day: " + dayOfWeek);
+
+        if (!sessionManager.canPerformApiOperations()) {
+            // Clear dữ liệu cũ
+            calendarItems.clear();
+            adapter.notifyDataSetChanged();
+
+            if (sessionManager.isGuest()) {
+                Toast.makeText(getContext(), "Chế độ khách - không có dữ liệu", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+
+        // Clear dữ liệu cũ trước khi load mới
         calendarItems.clear();
+        adapter.notifyDataSetChanged();
 
         // Lấy ngày tương ứng với tab được chọn
         Calendar selectedCalendar = getSelectedDateForDayOfWeek(dayOfWeek);
         Date selectedDate = selectedCalendar.getTime();
 
-        // Lấy danh sách môn học cho ngày được chọn
-        List<Course> courses = databaseHelper.getActiveCoursesForDay(dayOfWeek, selectedDate);
-        calendarItems.addAll(courses);
+        Log.d(TAG, "Selected date: " + selectedDate);
 
-        // Lấy danh sách sự kiện cho ngày được chọn
-        List<Event> events = databaseHelper.getEventsForDate(selectedDate);
-        calendarItems.addAll(events);
+        showProgressDialog("Đang tải dữ liệu...");
 
-        // Sắp xếp theo thời gian
-        adapter.notifyDataSetChanged();
+        // Biến đếm để đảm bảo cả 2 API call đều hoàn thành
+        final int[] completedCalls = {0};
+        final List<Object> tempItems = new ArrayList<>();
+
+        // Load courses for the selected day
+        apiHelper.getActiveCoursesForDay(dayOfWeek, selectedDate, new ApiHelper.ApiCallback<List<Course>>() {
+            @Override
+            public void onSuccess(List<Course> courses) {
+                Log.d(TAG, "Loaded " + courses.size() + " courses");
+                synchronized (tempItems) {
+                    tempItems.addAll(courses);
+                    completedCalls[0]++;
+
+                    // Nếu cả 2 API call đều hoàn thành
+                    if (completedCalls[0] >= 2) {
+                        updateCalendarItems(tempItems);
+                    }
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error loading courses: " + error);
+                synchronized (tempItems) {
+                    completedCalls[0]++;
+
+                    // Nếu cả 2 API call đều hoàn thành (kể cả lỗi)
+                    if (completedCalls[0] >= 2) {
+                        updateCalendarItems(tempItems);
+                    }
+                }
+                Toast.makeText(getContext(), "Lỗi tải môn học: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Load events for the selected date
+        apiHelper.getEventsForDate(selectedDate, new ApiHelper.ApiCallback<List<Event>>() {
+            @Override
+            public void onSuccess(List<Event> events) {
+                Log.d(TAG, "Loaded " + events.size() + " events");
+                synchronized (tempItems) {
+                    tempItems.addAll(events);
+                    completedCalls[0]++;
+
+                    // Nếu cả 2 API call đều hoàn thành
+                    if (completedCalls[0] >= 2) {
+                        updateCalendarItems(tempItems);
+                    }
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error loading events: " + error);
+                synchronized (tempItems) {
+                    completedCalls[0]++;
+
+                    // Nếu cả 2 API call đều hoàn thành (kể cả lỗi)
+                    if (completedCalls[0] >= 2) {
+                        updateCalendarItems(tempItems);
+                    }
+                }
+                Toast.makeText(getContext(), "Lỗi tải sự kiện: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void updateCalendarItems(List<Object> items) {
+        hideProgressDialog();
+
+        // Clear dữ liệu cũ và thêm dữ liệu mới
+        calendarItems.clear();
+        calendarItems.addAll(items);
+
+        Log.d(TAG, "Updated calendar with " + calendarItems.size() + " items");
+
+        // Notify adapter
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(() -> {
+                adapter.notifyDataSetChanged();
+            });
+        }
     }
 
     // Phương thức mới để lấy ngày tương ứng với thứ trong tuần
@@ -246,16 +349,39 @@ public class CalendarFragment extends Fragment implements CalendarEventAdapter.O
 
     @Override
     public void onCourseClick(Course course) {
-        Intent intent = new Intent(getActivity(), EditCourseActivity.class);
-        intent.putExtra("COURSE", course);
-        startActivity(intent);
+        if (sessionManager.canPerformApiOperations()) {
+            Intent intent = new Intent(getActivity(), EditCourseActivity.class);
+            intent.putExtra("COURSE", course);
+            startActivity(intent);
+        } else {
+            Toast.makeText(getContext(), "Vui lòng đăng nhập để chỉnh sửa", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
     public void onEventClick(Event event) {
-        Intent intent = new Intent(getActivity(), EditEventActivity.class);
-        intent.putExtra("EVENT", event);
-        startActivity(intent);
+        if (sessionManager.canPerformApiOperations()) {
+            Intent intent = new Intent(getActivity(), EditEventActivity.class);
+            intent.putExtra("EVENT", event);
+            startActivity(intent);
+        } else {
+            Toast.makeText(getContext(), "Vui lòng đăng nhập để chỉnh sửa", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showProgressDialog(String message) {
+        if (progressDialog == null) {
+            progressDialog = new ProgressDialog(getContext());
+            progressDialog.setCancelable(false);
+        }
+        progressDialog.setMessage(message);
+        progressDialog.show();
+    }
+
+    private void hideProgressDialog() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+        }
     }
 
     @Override
@@ -263,5 +389,11 @@ public class CalendarFragment extends Fragment implements CalendarEventAdapter.O
         super.onResume();
         // Cập nhật lại dữ liệu khi quay lại fragment
         loadCalendarItems();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        hideProgressDialog();
     }
 }

@@ -13,6 +13,7 @@ public class SessionManager {
     private static final String KEY_USER_NAME = "userName";
     private static final String KEY_IS_GUEST = "isGuest";
 
+    private static final String KEY_USER_ID = "userId";
     // SharedPreferences và Editor
     private SharedPreferences pref;
     private SharedPreferences.Editor editor;
@@ -33,6 +34,8 @@ public class SessionManager {
         editor.putBoolean(KEY_IS_GUEST, false);
         editor.putString(KEY_USER_EMAIL, email);
         editor.putString(KEY_USER_NAME, name != null ? name : "");
+        int userId = extractUserIdFromEmail(email);
+        editor.putInt(KEY_USER_ID, userId);
         editor.commit();
     }
 
@@ -44,9 +47,9 @@ public class SessionManager {
         editor.putBoolean(KEY_IS_GUEST, true);
         editor.remove(KEY_USER_EMAIL);
         editor.remove(KEY_USER_NAME);
+        editor.putInt(KEY_USER_ID, -1);
         editor.commit();
     }
-
     /**
      * Kiểm tra trạng thái đăng nhập
      */
@@ -72,6 +75,9 @@ public class SessionManager {
         return pref.getString(KEY_USER_NAME, "");
     }
 
+    public int getUserId() {
+        return pref.getInt(KEY_USER_ID, -1);
+    }
     /**
      * Đăng xuất người dùng
      */
@@ -79,4 +85,32 @@ public class SessionManager {
         editor.clear();
         editor.commit();
     }
+
+    private int extractUserIdFromEmail(String email) {
+        // This is a simple implementation
+        // In a real app, you should get the user ID from the login response
+        return Math.abs(email.hashCode() % 10000);
+    }
+
+    public void createLoginSession(String email, String name, int userId) {
+        editor.putBoolean(KEY_IS_LOGGED_IN, true);
+        editor.putBoolean(KEY_IS_GUEST, false);
+        editor.putString(KEY_USER_EMAIL, email);
+        editor.putString(KEY_USER_NAME, name != null ? name : "");
+        editor.putInt(KEY_USER_ID, userId);
+        editor.commit();
+    }
+
+    /**
+     * Lấy user ID
+     */
+
+
+    /**
+     * Kiểm tra xem có thể thực hiện thao tác API không
+     */
+    public boolean canPerformApiOperations() {
+        return isLoggedIn() && getUserId() != -1;
+    }
+
 }

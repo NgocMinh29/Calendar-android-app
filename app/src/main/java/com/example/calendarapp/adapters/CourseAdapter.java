@@ -16,6 +16,7 @@ import com.example.calendarapp.R;
 import com.example.calendarapp.models.Course;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -53,11 +54,31 @@ public class CourseAdapter extends RecyclerView.Adapter<CourseAdapter.CourseView
         String timeInfo = course.getDayOfWeek() + " | " + course.getStartTime() + " - " + course.getEndTime();
         holder.tvCourseTime.setText(timeInfo);
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        String dateRange = "Cách " + course.getWeekFrequency() + " tuần | " +
-                dateFormat.format(course.getStartDate()) + " - " +
-                dateFormat.format(course.getEndDate());
-        holder.tvCourseDateRange.setText(dateRange);
+//        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+//        String dateRange = "Cách " + course.getWeekFrequency() + " tuần | " +
+//                dateFormat.format(course.getStartDate()) + " - " +
+//                dateFormat.format(course.getEndDate());
+//        holder.tvCourseDateRange.setText(dateRange);
+//        String dateRange = "Cách " + course.getWeekFrequency() + " tuần | " +
+//                course.getStartDate() + " - " + course.getEndDate();
+//        holder.tvCourseDateRange.setText(dateRange);
+
+        try {
+            SimpleDateFormat input = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            SimpleDateFormat output = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+
+            Date startDate = input.parse(course.getStartDate());
+            Date endDate = input.parse(course.getEndDate());
+
+            String dateRange = "Cách " + course.getWeekFrequency() + " tuần | " +
+                    output.format(startDate) + " - " + output.format(endDate);
+
+            holder.tvCourseDateRange.setText(dateRange);
+        } catch (Exception e) {
+            holder.tvCourseDateRange.setText("Ngày học không hợp lệ");
+        }
+
+
 
         if (course.isNotification()) {
             holder.tvCourseReminder.setText("Nhắc trước " + course.getReminderMinutes() + " phút");

@@ -1,6 +1,7 @@
 package com.example.calendarapp.activities;
 
 import android.app.DatePickerDialog;
+import android.app.ProgressDialog;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.view.View;
@@ -17,8 +18,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.calendarapp.R;
 import com.example.calendarapp.models.Course;
-import com.example.calendarapp.models.DatabaseHelper;
+import com.example.calendarapp.utils.ApiHelper;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -45,7 +47,8 @@ public class EditCourseActivity extends AppCompatActivity {
     private Calendar selectedEndDate = Calendar.getInstance();
 
     private Course course;
-    private DatabaseHelper databaseHelper;
+    private ApiHelper apiHelper;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +62,7 @@ public class EditCourseActivity extends AppCompatActivity {
             return;
         }
 
-        databaseHelper = new DatabaseHelper(this);
+        apiHelper = new ApiHelper(this);
 
         btnBack = findViewById(R.id.btn_back);
         etCourseName = findViewById(R.id.et_course_name);
@@ -137,13 +140,16 @@ public class EditCourseActivity extends AppCompatActivity {
             }
         }
 
-        // Set dates
-        if (course.getStartDate() != null) {
-            selectedStartDate.setTime(course.getStartDate());
-        }
+        // Set dates from string format yyyy-MM-dd
+        SimpleDateFormat apiDateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        try {
+            Date startDate = apiDateFormat.parse(course.getStartDate());
+            selectedStartDate.setTime(startDate);
 
-        if (course.getEndDate() != null) {
-            selectedEndDate.setTime(course.getEndDate());
+            Date endDate = apiDateFormat.parse(course.getEndDate());
+            selectedEndDate.setTime(endDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
 
         // Set week frequency spinner
@@ -312,11 +318,12 @@ public class EditCourseActivity extends AppCompatActivity {
         course.setDayOfWeek(spinnerDay.getSelectedItem().toString());
 
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        SimpleDateFormat apiDateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
         course.setStartTime(timeFormat.format(selectedStartTime.getTime()));
         course.setEndTime(timeFormat.format(selectedEndTime.getTime()));
-
-        course.setStartDate(selectedStartDate.getTime());
-        course.setEndDate(selectedEndDate.getTime());
+        course.setStartDate(apiDateFormat.format(selectedStartDate.getTime()));
+        course.setEndDate(apiDateFormat.format(selectedEndDate.getTime()));
 
         // Get week frequency from spinner selection
         int weekFrequency = 1; // Default to weekly
@@ -352,15 +359,27 @@ public class EditCourseActivity extends AppCompatActivity {
         }
         course.setReminderMinutes(reminderMinutes);
 
-        // Update in database
-        int result = databaseHelper.updateCourse(course);
+        // Show progress dialog
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Đang cập nhật môn học...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
 
-        if (result > 0) {
-            Toast.makeText(this, "Đã cập nhật môn học", Toast.LENGTH_SHORT).show();
-            setResult(RESULT_OK);
-            finish();
-        } else {
-            Toast.makeText(this, "Lỗi khi cập nhật môn học", Toast.LENGTH_SHORT).show();
-        }
+        // Update on server
+        apiHelper.updateCourse(course, new ApiHelper.ApiCallback<Course>() {
+            @Override
+            public void onSuccess(Course data) {
+                progressDialog.dismiss();
+                Toast.makeText(EditCourseActivity.this, "Đã cập nhật môn học", Toast.LENGTH_SHORT).show();
+                setResult(RESULT_OK);
+                finish();
+            }
+
+            @Override
+            public void onError(String error) {
+                progressDialog.dismiss();
+                Toast.makeText(EditCourseActivity.this, "Lỗi cập nhật: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

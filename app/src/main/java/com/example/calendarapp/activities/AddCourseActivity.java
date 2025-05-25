@@ -1,6 +1,7 @@
 package com.example.calendarapp.activities;
 
 import android.app.DatePickerDialog;
+import android.app.ProgressDialog;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.view.View;
@@ -15,14 +16,12 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.calendarapp.MainActivity;
 import com.example.calendarapp.R;
 import com.example.calendarapp.models.Course;
-import com.example.calendarapp.models.DatabaseHelper;
+import com.example.calendarapp.utils.ApiHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 
 public class AddCourseActivity extends AppCompatActivity {
@@ -45,14 +44,15 @@ public class AddCourseActivity extends AppCompatActivity {
     private Calendar selectedStartDate = Calendar.getInstance();
     private Calendar selectedEndDate = Calendar.getInstance();
 
-    private DatabaseHelper databaseHelper;
+    private ApiHelper apiHelper;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_course);
 
-        databaseHelper = new DatabaseHelper(this);
+        apiHelper = new ApiHelper(this);
 
         btnBack = findViewById(R.id.btn_back);
         etCourseName = findViewById(R.id.et_course_name);
@@ -228,11 +228,12 @@ public class AddCourseActivity extends AppCompatActivity {
         String dayOfWeek = spinnerDay.getSelectedItem().toString();
 
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
         String startTime = timeFormat.format(selectedStartTime.getTime());
         String endTime = timeFormat.format(selectedEndTime.getTime());
-
-        Date startDate = selectedStartDate.getTime();
-        Date endDate = selectedEndDate.getTime();
+        String startDate = dateFormat.format(selectedStartDate.getTime());
+        String endDate = dateFormat.format(selectedEndDate.getTime());
 
         // Get week frequency from spinner selection
         int weekFrequency = 1; // Default to weekly
@@ -279,15 +280,27 @@ public class AddCourseActivity extends AppCompatActivity {
         course.setNotification(notification);
         course.setReminderMinutes(reminderMinutes);
 
-        // Save to database
-        long id = databaseHelper.addCourse(course);
+        // Show progress dialog
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Đang thêm môn học...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
 
-        if (id > 0) {
-            Toast.makeText(this, "Đã thêm môn học", Toast.LENGTH_SHORT).show();
-            setResult(RESULT_OK);
-            finish();
-        } else {
-            Toast.makeText(this, "Lỗi khi thêm môn học", Toast.LENGTH_SHORT).show();
-        }
+        // Save to server
+        apiHelper.createCourse(course, new ApiHelper.ApiCallback<Course>() {
+            @Override
+            public void onSuccess(Course data) {
+                progressDialog.dismiss();
+                Toast.makeText(AddCourseActivity.this, "Đã thêm môn học", Toast.LENGTH_SHORT).show();
+                setResult(RESULT_OK);
+                finish();
+            }
+
+            @Override
+            public void onError(String error) {
+                progressDialog.dismiss();
+                Toast.makeText(AddCourseActivity.this, "Lỗi: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

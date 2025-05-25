@@ -1,28 +1,57 @@
 package com.example.calendarapp.models;
 
+import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
-import java.util.Date;
 
 public class Course implements Serializable {
+    @SerializedName("id")
     private long id;
+
+    @SerializedName("user_id")
+    private int userId;
+
+    @SerializedName("user_email")
+    private String userEmail;
+
+    @SerializedName("name")
     private String name;
+
+    @SerializedName("room")
     private String room;
+
+    @SerializedName("day_of_week")
     private String dayOfWeek;
+
+    @SerializedName("start_time")
     private String startTime;
+
+    @SerializedName("end_time")
     private String endTime;
-    private Date startDate;
-    private Date endDate;
+
+    @SerializedName("start_date")
+    private String startDate; // Format: yyyy-MM-dd
+
+    @SerializedName("end_date")
+    private String endDate; // Format: yyyy-MM-dd
+
+    @SerializedName("week_frequency")
     private int weekFrequency;
+
+    @SerializedName("notification")
     private boolean notification;
+
+    @SerializedName("reminder_minutes")
     private int reminderMinutes;
 
     public Course() {
         // Default constructor
     }
 
-    public Course(long id, String name, String room, String dayOfWeek, String startTime, String endTime,
-                  Date startDate, Date endDate, int weekFrequency, boolean notification, int reminderMinutes) {
+    public Course(long id, int userId, String name, String room, String dayOfWeek,
+                  String startTime, String endTime, String startDate, String endDate,
+                  int weekFrequency, boolean notification, int reminderMinutes) {
         this.id = id;
+        this.userId = userId;
         this.name = name;
         this.room = room;
         this.dayOfWeek = dayOfWeek;
@@ -42,6 +71,22 @@ public class Course implements Serializable {
 
     public void setId(long id) {
         this.id = id;
+    }
+
+    public int getUserId() {
+        return userId;
+    }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
     }
 
     public String getName() {
@@ -84,19 +129,19 @@ public class Course implements Serializable {
         this.endTime = endTime;
     }
 
-    public Date getStartDate() {
+    public String getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(Date startDate) {
+    public void setStartDate(String startDate) {
         this.startDate = startDate;
     }
 
-    public Date getEndDate() {
+    public String getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(Date endDate) {
+    public void setEndDate(String endDate) {
         this.endDate = endDate;
     }
 

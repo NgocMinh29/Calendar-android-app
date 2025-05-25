@@ -1,6 +1,7 @@
 package com.example.calendarapp.activities;
 
 import android.app.DatePickerDialog;
+import android.app.ProgressDialog;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.view.View;
@@ -16,11 +17,13 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.calendarapp.R;
-import com.example.calendarapp.models.DatabaseHelper;
 import com.example.calendarapp.models.Event;
+import com.example.calendarapp.utils.ApiHelper;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 
 public class EditEventActivity extends AppCompatActivity {
@@ -37,7 +40,8 @@ public class EditEventActivity extends AppCompatActivity {
     private Calendar selectedDate = Calendar.getInstance();
     private Calendar selectedTime = Calendar.getInstance();
     private Event event;
-    private DatabaseHelper databaseHelper;
+    private ApiHelper apiHelper;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +55,7 @@ public class EditEventActivity extends AppCompatActivity {
             return;
         }
 
-        databaseHelper = new DatabaseHelper(this);
+        apiHelper = new ApiHelper(this);
 
         btnBack = findViewById(R.id.btn_back);
         etEventTitle = findViewById(R.id.et_event_title);
@@ -79,9 +83,13 @@ public class EditEventActivity extends AppCompatActivity {
         etEventTitle.setText(event.getTitle());
         etEventNote.setText(event.getNote());
 
-        // Set date
-        if (event.getDate() != null) {
-            selectedDate.setTime(event.getDate());
+        // Set date from string format yyyy-MM-dd
+        SimpleDateFormat apiDateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        try {
+            Date eventDate = apiDateFormat.parse(event.getDate());
+            selectedDate.setTime(eventDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
 
         // Set time
@@ -190,11 +198,13 @@ public class EditEventActivity extends AppCompatActivity {
     private void updateEvent() {
         event.setTitle(etEventTitle.getText().toString().trim());
         event.setNote(etEventNote.getText().toString().trim());
-        event.setDate(selectedDate.getTime());
+//        event.setUserEmail(currentUserEmail); // currentUserEmail lấy từ session, SharedPreferences
 
+        SimpleDateFormat apiDateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
-        event.setTime(timeFormat.format(selectedTime.getTime()));
 
+        event.setDate(apiDateFormat.format(selectedDate.getTime()));
+        event.setTime(timeFormat.format(selectedTime.getTime()));
         event.setNotification(switchNotification.isChecked());
 
         // Get reminder minutes from spinner selection
@@ -215,15 +225,27 @@ public class EditEventActivity extends AppCompatActivity {
         }
         event.setReminderMinutes(reminderMinutes);
 
-        // Update in database
-        int result = databaseHelper.updateEvent(event);
+        // Show progress dialog
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Đang cập nhật sự kiện...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
 
-        if (result > 0) {
-            Toast.makeText(this, "Đã cập nhật sự kiện", Toast.LENGTH_SHORT).show();
-            setResult(RESULT_OK);
-            finish();
-        } else {
-            Toast.makeText(this, "Lỗi khi cập nhật sự kiện", Toast.LENGTH_SHORT).show();
-        }
+        // Update on server
+        apiHelper.updateEvent(event, new ApiHelper.ApiCallback<Event>() {
+            @Override
+            public void onSuccess(Event data) {
+                progressDialog.dismiss();
+                Toast.makeText(EditEventActivity.this, "Đã cập nhật sự kiện", Toast.LENGTH_SHORT).show();
+                setResult(RESULT_OK);
+                finish();
+            }
+
+            @Override
+            public void onError(String error) {
+                progressDialog.dismiss();
+                Toast.makeText(EditEventActivity.this, "Lỗi cập nhật: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

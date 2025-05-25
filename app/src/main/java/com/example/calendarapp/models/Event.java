@@ -1,24 +1,47 @@
 package com.example.calendarapp.models;
 
+import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
-import java.util.Date;
 
 public class Event implements Serializable {
+    @SerializedName("id")
     private long id;
+
+    @SerializedName("user_id")
+    private int userId;
+
+    @SerializedName("user_email")
+    private String userEmail;
+
+    @SerializedName("title")
     private String title;
+
+    @SerializedName("note")
     private String note;
-    private Date date;
-    private String time;
+
+    @SerializedName("date")
+    private String date; // Format: yyyy-MM-dd
+
+    @SerializedName("time")
+    private String time; // Format: HH:mm
+
+    @SerializedName("notification")
     private boolean notification;
+
+    @SerializedName("reminder_minutes")
     private int reminderMinutes;
+
+    @SerializedName("location")
     private String location;
 
     public Event() {
         // Default constructor
     }
 
-    public Event(long id, String title, String note, Date date, String time, boolean notification, int reminderMinutes, String location) {
+    public Event(long id, int userId, String title, String note, String date, String time,
+                 boolean notification, int reminderMinutes, String location) {
         this.id = id;
+        this.userId = userId;
         this.title = title;
         this.note = note;
         this.date = date;
@@ -37,6 +60,22 @@ public class Event implements Serializable {
         this.id = id;
     }
 
+    public int getUserId() {
+        return userId;
+    }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+
     public String getTitle() {
         return title;
     }
@@ -53,11 +92,11 @@ public class Event implements Serializable {
         this.note = note;
     }
 
-    public Date getDate() {
+    public String getDate() {
         return date;
     }
 
-    public void setDate(Date date) {
+    public void setDate(String date) {
         this.date = date;
     }
 

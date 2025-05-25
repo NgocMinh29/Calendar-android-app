@@ -1,6 +1,7 @@
 package com.example.calendarapp.activities;
 
 import android.app.DatePickerDialog;
+import android.app.ProgressDialog;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.view.View;
@@ -11,15 +12,16 @@ import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.calendarapp.R;
 import com.example.calendarapp.models.Event;
+import com.example.calendarapp.utils.ApiHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 
 public class AddEventActivity extends AppCompatActivity {
@@ -35,11 +37,15 @@ public class AddEventActivity extends AppCompatActivity {
 
     private Calendar selectedDate = Calendar.getInstance();
     private Calendar selectedTime = Calendar.getInstance();
+    private ApiHelper apiHelper;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_event);
+
+        apiHelper = new ApiHelper(this);
 
         btnBack = findViewById(R.id.btn_back);
         etEventTitle = findViewById(R.id.et_event_title);
@@ -135,8 +141,11 @@ public class AddEventActivity extends AppCompatActivity {
     private void saveEvent() {
         String title = etEventTitle.getText().toString().trim();
         String note = etEventNote.getText().toString().trim();
-        Date date = selectedDate.getTime();
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+
+        String date = dateFormat.format(selectedDate.getTime());
         String time = timeFormat.format(selectedTime.getTime());
         boolean notification = switchNotification.isChecked();
 
@@ -165,9 +174,29 @@ public class AddEventActivity extends AppCompatActivity {
         event.setTime(time);
         event.setNotification(notification);
         event.setReminderMinutes(reminderMinutes);
+        event.setLocation(""); // Default empty location
 
-        // Return result to calling activity
-        setResult(RESULT_OK);
-        finish();
+        // Show progress dialog
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Đang thêm sự kiện...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        // Save to server
+        apiHelper.createEvent(event, new ApiHelper.ApiCallback<Event>() {
+            @Override
+            public void onSuccess(Event data) {
+                progressDialog.dismiss();
+                Toast.makeText(AddEventActivity.this, "Đã thêm sự kiện", Toast.LENGTH_SHORT).show();
+                setResult(RESULT_OK);
+                finish();
+            }
+
+            @Override
+            public void onError(String error) {
+                progressDialog.dismiss();
+                Toast.makeText(AddEventActivity.this, "Lỗi: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

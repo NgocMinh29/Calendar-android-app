@@ -16,6 +16,7 @@ import com.example.calendarapp.R;
 import com.example.calendarapp.models.Event;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -50,9 +51,19 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         holder.tvEventTitle.setText(event.getTitle());
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        String dateStr = dateFormat.format(event.getDate());
+//        String dateStr = dateFormat.format(event.getDate());
+        try {
+            SimpleDateFormat input = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            SimpleDateFormat output = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            Date date = input.parse(event.getDate());
+            String dateStr = output.format(date);
+            holder.tvEventDateTime.setText(dateStr + " | " + event.getTime());
+        } catch (Exception e) {
+            holder.tvEventDateTime.setText(event.getDate() + " | " + event.getTime()); // fallback
+        }
 
-        holder.tvEventDateTime.setText(dateStr + " | " + event.getTime());
+
+//        holder.tvEventDateTime.setText(dateStr + " | " + event.getTime());
         holder.tvEventLocation.setText(event.getLocation());
 
         if (event.isNotification()) {
