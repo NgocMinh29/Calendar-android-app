@@ -19,9 +19,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.calendarapp.R;
 import com.example.calendarapp.models.Course;
 import com.example.calendarapp.utils.ApiHelper;
+import com.example.calendarapp.utils.NotificationHelper;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 
 public class AddCourseActivity extends AppCompatActivity {
@@ -285,6 +288,22 @@ public class AddCourseActivity extends AppCompatActivity {
         progressDialog.setMessage("Đang thêm môn học...");
         progressDialog.setCancelable(false);
         progressDialog.show();
+        // 🔔 Đặt lịch thông báo sau khi Course được tạo hoặc cập nhật
+        if (course.isNotification()) {
+            Calendar cal = Calendar.getInstance();
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+                Date date = sdf.parse(course.getStartDate() + " " + course.getStartTime());
+                cal.setTime(date);
+                cal.add(Calendar.MINUTE, -course.getReminderMinutes());
+                NotificationHelper.cancelReminder(AddCourseActivity.this, 2000 + (int) course.getId());
+                NotificationHelper.scheduleReminder(AddCourseActivity.this, 2000 + (int) course.getId(), cal, course.getName());
+
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+
 
         // Save to server
         apiHelper.createCourse(course, new ApiHelper.ApiCallback<Course>() {

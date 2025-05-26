@@ -32,7 +32,7 @@ public class ApiClient {
                     Log.d("ApiClient", "Máy thật - IP: " + ip);
                 } else {
                     // fallback nếu không lấy được IP
-                    BASE_URL = "http://10.0.140.127:8080/schedule_api/";
+                    BASE_URL = "http://10.0.148.144:8080/schedule_api/";
                     Log.w("ApiClient", "Không lấy được IP - dùng IP mặc định");
                 }
             }

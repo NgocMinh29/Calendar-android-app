@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.calendarapp.R;
 import com.example.calendarapp.models.Event;
 import com.example.calendarapp.utils.ApiHelper;
+import com.example.calendarapp.utils.NotificationHelper;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -230,6 +231,20 @@ public class EditEventActivity extends AppCompatActivity {
         progressDialog.setMessage("Đang cập nhật sự kiện...");
         progressDialog.setCancelable(false);
         progressDialog.show();
+
+        if (event.isNotification()) {
+            Calendar cal = Calendar.getInstance();
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+                Date date1 = sdf.parse(event.getDate() + " " + event.getTime());
+                cal.setTime(date1);
+                cal.add(Calendar.MINUTE, -event.getReminderMinutes());
+                NotificationHelper.cancelReminder(this, 1000 + (int) event.getId());
+                NotificationHelper.scheduleReminder(this, 1000 + (int) event.getId(), cal, event.getTitle());
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
 
         // Update on server
         apiHelper.updateEvent(event, new ApiHelper.ApiCallback<Event>() {

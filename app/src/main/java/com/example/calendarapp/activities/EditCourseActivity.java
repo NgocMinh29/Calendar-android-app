@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.calendarapp.R;
 import com.example.calendarapp.models.Course;
 import com.example.calendarapp.utils.ApiHelper;
+import com.example.calendarapp.utils.NotificationHelper;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -365,6 +366,20 @@ public class EditCourseActivity extends AppCompatActivity {
         progressDialog.setCancelable(false);
         progressDialog.show();
 
+        if (course.isNotification()) {
+            Calendar cal = Calendar.getInstance();
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+                Date date = sdf.parse(course.getStartDate() + " " + course.getStartTime());
+                cal.setTime(date);
+                cal.add(Calendar.MINUTE, -course.getReminderMinutes());
+                NotificationHelper.cancelReminder(EditCourseActivity.this, 2000 + (int) course.getId());
+                NotificationHelper.scheduleReminder(EditCourseActivity.this, 2000 + (int) course.getId(), cal, course.getName());
+
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
         // Update on server
         apiHelper.updateCourse(course, new ApiHelper.ApiCallback<Course>() {
             @Override
