@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Vòng tròn ngoài màu xanh nhạt -->
+    <path
+        android:fillColor="#E1F5FE"
+        android:pathData="M60,60m-58,0a58,58 0,1 1,116 0a58,58 0,1 1,-116 0" />
+
+    <!-- Vòng tròn trong màu tím -->
+    <path
+        android:fillColor="#7E57C2"
+        android:pathData="M60,60m-45,0a45,45 0,1 1,90 0a45,45 0,1 1,-90 0" />
+
+    <!-- Biểu tượng người dùng màu trắng -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M60,45m-15,0a15,15 0,1 1,30 0a15,15 0,1 1,-30 0" />
+
+    <!-- Phần thân người dùng màu trắng -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M60,65C49,65 40,74 40,85C40,86.7 41.3,88 43,88L77,88C78.7,88 80,86.7 80,85C80,74 71,65 60,65Z" />
+
+    <!-- Dấu tích màu xanh lá -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M90,30m-18,0a18,18 0,1 1,36 0a18,18 0,1 1,-36 0" />
+
+    <!-- Dấu tích màu trắng -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M83,30L88,35L97,26" />
+
+</vector>

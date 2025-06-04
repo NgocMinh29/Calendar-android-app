@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_new_chat"
+        android:title="Cuộc trò chuyện mới"
+        android:icon="@drawable/ic_add"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_chat_history"
+        android:title="Lịch sử trò chuyện"
+        android:icon="@drawable/ic_history"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_clear_chat"
+        android:title="Xóa cuộc trò chuyện"
+        android:icon="@drawable/ic_delete"
+        app:showAsAction="never" />
+
+</menu>

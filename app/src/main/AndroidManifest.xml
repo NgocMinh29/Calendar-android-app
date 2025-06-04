@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.calendarapp">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:largeHeap="true"
+        android:hardwareAccelerated="true"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/Theme.CalendarApp">
+
+        <!--        android:theme="@style/AppTheme">-->
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id" />
+        <meta-data
+            android:name="com.facebook.sdk.ClientToken"
+            android:value="@string/facebook_client_token" />
+        <!-- Google Services -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+        <activity
+            android:name="com.facebook.FacebookActivity"
+            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+            android:label="@string/app_name" />
+        <activity
+            android:name="com.facebook.CustomTabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/fb_login_protocol_scheme" />
+            </intent-filter>
+        </activity>
+
+        <!-- Thêm SplashActivity làm màn hình khởi động -->
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Bỏ intent-filter MAIN/LAUNCHER khỏi LoginActivity -->
+        <activity
+            android:name=".login.LoginActivity"
+            android:exported="true">
+        </activity>
+        <!-- Thêm các Activity Premium -->
+        <activity
+            android:name=".premium.PremiumPurchaseActivity"
+            android:label="Nâng cấp Premium" />
+        <activity
+            android:name=".premium.PurchaseSuccessActivity"
+            android:label="Thanh toán thành công" />
+
+        <activity
+            android:name=".payment.BankTransferActivity"
+            android:label="Chuyển khoản ngân hàng"
+            android:screenOrientation="portrait" />
+        <activity android:name=".MainActivity" android:exported="true" />
+        <activity
+            android:name=".activities.AddEventActivity"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".activities.EditEventActivity"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".activities.AddCourseActivity"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".activities.EditCourseActivity"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".ai.AIChatActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:label="Trợ lý AI Học tập"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
+        </activity>
+        <!-- THÊM MỚI: Conversations Activity -->
+        <activity
+            android:name=".ai.ConversationsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:label="Lịch sử trò chuyện"
+            android:parentActivityName=".ai.AIChatActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".ai.AIChatActivity" />
+        </activity>
+        <activity android:name=".sign_up.SignupActivity" />
+        <activity android:name=".sign_up.SignupVerificationActivity" />
+        <activity android:name=".sign_up.SignupSuccessActivity" />
+        <activity android:name=".forgot_password.ForgotPasswordActivity" />
+        <activity android:name=".forgot_password.VerificationActivity" />
+        <activity android:name=".forgot_password.SetNewPasswordActivity" />
+        <activity android:name=".forgot_password.ResetSuccessActivity" />
+        <activity android:name=".MainActivity_Login" />
+
+        <receiver android:name=".utils.ReminderReceiver" android:exported="true" />
+    </application>
+
+</manifest>
